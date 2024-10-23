@@ -104,26 +104,28 @@ int main(int argc, char* argv[])
 
             unsigned int time = 0;
             unsigned int command = 0;
-            unsigned int data = 0;
+            unsigned char data[4] = {0};
 
-            get_contents(client->request, &time, &command, &data);
+            get_contents(client->request, &time, &command, data);
             
             printf("time: %d, ", time);
             printf("command: %d, ", command);
-            printf("data: %d.\n", data);
+            unsigned int value = 0;
+            memcpy(&value, data, 4);
+            printf("data: %u.\n", value);
 
             //check if it's a GET request
             if (command <= 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                handle_udp_get_request(command, &data);
+                handle_udp_get_request(command, data);
 
                 unsigned char response_buffer[12] = {0};
 
                 int buffer_idx = 0;
                 int_to_buffer(&buffer_idx, response_buffer, time);
                 int_to_buffer(&buffer_idx, response_buffer, command);
-                int_to_buffer(&buffer_idx, response_buffer, data);
+                memcpy(response_buffer + 8, data, 4);
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
@@ -182,26 +184,28 @@ int main(int argc, char* argv[])
 
             unsigned int time = 0;
             unsigned int command = 0;
-            unsigned int data = 0;
+            char data[4] = {0};
 
-            get_contents(client->request, &time, &command, &data);
+            get_contents(client->request, &time, &command, data);
             
             printf("time: %d, ", time);
             printf("command: %d, ", command);
-            printf("data: %d.\n", data);
+            unsigned int value = 0;
+            memcpy(&value, data, 4);
+            printf("data: %u.\n", value);
 
             //check if it's a GET request
             if (command <= 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                handle_udp_get_request(command, &data);
+                handle_udp_get_request(command, data);
 
                 unsigned char response_buffer[12] = {0};
 
                 int buffer_idx = 0;
                 int_to_buffer(&buffer_idx, response_buffer, time);
                 int_to_buffer(&buffer_idx, response_buffer, command);
-                int_to_buffer(&buffer_idx, response_buffer, data);
+                memcpy(response_buffer + 8, data, 4);
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
@@ -383,7 +387,7 @@ bool continue_server(){
     }
 }
 
-void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsigned int* data){
+void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsigned char* data){
     memcpy(time, buffer, 4);
     memcpy(command, buffer + 4, 4);
     memcpy(data, buffer + 8, 4);

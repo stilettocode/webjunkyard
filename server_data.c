@@ -16,15 +16,38 @@
 
 // --------------------------Handle UDP Request-------------------------------
 
-void handle_udp_get_request(unsigned int command, unsigned int* data){
-    
-    if(command == 1){
-        printf("Getting comm.\n");
+void handle_udp_get_request(unsigned int command, unsigned char* data){
+
+    if(command == 0){
+        printf("Invalid command.\n");
+    }
+    else if(command < 2){
+        printf("Getting COMM.\n");
         udp_get_comm(data);
     }
     else if(command < 14){
         printf("Getting DCU.\n");
         udp_get_dcu(command, data);
+    }
+    else if(command < 17){
+        printf("Getting ERORR.\n");
+        udp_get_error(command, data);
+    }
+    else if(command < 23){
+        printf("Getting IMU.\n");
+        udp_get_imu(command, data);
+    }
+    else if(command < 26){
+        printf("Getting ROVER.\n");
+        udp_get_rover(command, data);
+    }
+    else if(command < 48){
+        printf("Getting SPEC.\n");
+        udp_get_spec(command, data);
+    }
+    else if(command < 58){
+        printf("Getting UIA.\n");
+        udp_get_uia(command, data);
     }
     else{
         printf("Request not found.\n");
@@ -278,7 +301,9 @@ bool update_uia(char* request_content, struct uia_data_t* uia){
 
 }
 
-bool udp_get_uia(unsigned char* request_content){
+bool udp_get_uia(unsigned int command, unsigned char* data){
+
+    int off_set = command - 48;
     //Open file
     FILE* fp = fopen("public/json_data/UIA.json", "r");
     if (fp == NULL) { 
@@ -312,10 +337,17 @@ bool udp_get_uia(unsigned char* request_content){
     cJSON* uia = cJSON_GetObjectItemCaseSensitive(json, "uia");
     cJSON* uia_item = uia->child;
 
-    while(uia_item != NULL){
-        strcat(request_content, cJSON_IsTrue(uia_item) ? "T" : "F");
+    union{
+        bool val;
+        unsigned char temp[4];
+    }u;
+
+    for(int i = 0; i != off_set; i++){
         uia_item = uia_item->next;
     }
+
+    u.val = cJSON_IsTrue(uia_item);
+    memcpy(data, u.temp, 4);
 
     cJSON_Delete(json);
     return true;
@@ -450,7 +482,7 @@ bool update_dcu(char* request_content, struct dcu_data_t* dcu){
 
 }
 
-bool udp_get_dcu(unsigned int command, unsigned int* data){
+bool udp_get_dcu(unsigned int command, unsigned char* data){
 
     int off_set = command - 2;
 
@@ -599,7 +631,10 @@ bool update_imu(char* request_content, struct imu_data_t* imu){
 
 }
 
-bool udp_get_imu(unsigned char* request_content, int eva){
+bool udp_get_imu(unsigned int command, unsigned char* data){
+
+    int off_set = command - 17;
+
     //Open file
     FILE* fp = fopen("public/json_data/IMU.json", "r");
     if (fp == NULL) { 
@@ -629,11 +664,6 @@ bool udp_get_imu(unsigned char* request_content, int eva){
         cJSON_Delete(json); 
         return false; 
     } 
-
-    union {
-        float fl;
-        unsigned char temp[4];
-    } u;
     
     cJSON* imu = cJSON_GetObjectItemCaseSensitive(json, "imu");
     cJSON* eva1 = imu->child;
@@ -642,44 +672,29 @@ bool udp_get_imu(unsigned char* request_content, int eva){
     cJSON* eva1_pos = eva1->child;
     cJSON* eva2_pos = eva2->child;
 
-    int idx = 0;
-    if (eva != 2){
-        while(eva1_pos != NULL){
-            u.fl = eva1_pos->valueint; 
-            memcpy(request_content + idx, u.temp, 4);
+    union {
+        float val;
+        unsigned char temp[4];
+    }u;
 
-            idx += 4;
+    if (off_set < 3){
+        for (int i = 0; i != off_set; i++){
             eva1_pos = eva1_pos->next;
         }
-    }
-    if (eva != 1){
-        while (eva2_pos != NULL){
-            u.fl = eva2_pos->valueint;
-            memcpy(request_content + idx, u.temp, 4);
+        u.val = eva1_pos->valuedouble;
+        memcpy(data, u.temp, 4);
 
-            idx += 4;
+    }
+    else{
+        off_set -= 3;
+        for (int i = 0; i != off_set; i++){
             eva2_pos = eva2_pos->next;
         }
-        
+        u.val = eva2_pos->valuedouble;
+        memcpy(data, u.temp, 4);
     }
 
-    #ifdef TESTING_MODE
-    printf("idx at end: %d\n", idx);
-    for (int i = 0; i < idx; i++){
-        if (i == 0){
-            printf("IMU Whole buffer: %02x", request_content[i]);
-        }
-        else{
-            printf("%02x", request_content[i]);
-
-            if (i == idx - 1){
-                printf("\n");
-            }
-        }
-    }
-    #endif
-
-
+    cJSON_Delete(json);
     return true;
 }
 
@@ -735,7 +750,10 @@ bool update_rover(char* request_content, struct rover_data_t* rover){
     return true;
 
 }
-bool udp_get_rover(unsigned char* request_content){
+bool udp_get_rover(unsigned int command, unsigned char* data){
+
+    int off_set = command - 23;
+
     FILE* fp = fopen("public/json_data/ROVER.json", "r");
     if (fp == NULL) { 
         printf("Error: Unable to open the file.\n"); 
@@ -765,40 +783,28 @@ bool udp_get_rover(unsigned char* request_content){
         return false; 
     } 
 
+    cJSON* rover = cJSON_GetObjectItemCaseSensitive(json, "rover");
+    cJSON* rover_item = rover->child;
+
     union{
         float fl;
         unsigned char temp[4];
     } u;
 
-    cJSON* rover = cJSON_GetObjectItemCaseSensitive(json, "rover");
-    cJSON* rover_item = rover->child;
-
-    int idx = 0;
-    for (int i = 0; i < 2; i++){
+    if (off_set < 2){
+        for (int i = 0; i != off_set; i++){
+            rover_item = rover_item->next;
+        }
+        u.fl = rover_item->valuedouble;
+        memcpy(data, u.temp, 4);
+    }
+    else {
+        rover_item = rover_item->next->next;
         u.fl = rover_item->valueint;
-        memcpy(request_content + idx, u.temp, 4);
-
-        idx += 4;
-        rover_item = rover_item->next;
+        memcpy(data, u.temp, 4);
     }
 
-    request_content[idx] = rover_item->valueint & 0xff;
-
-    #ifdef TESTING_MODE
-    for (int i = 0; i < 3; i++){
-        if (i == 0){
-            printf("ROVER Whole buffer: %02x", request_content[i]);
-        }
-        else{
-            printf("%02x", request_content[i]);
-
-            if(i == 2){
-                printf("\n");
-            }
-        }
-    }
-    #endif
-
+    cJSON_Delete(json);
     return true;
 
 }
@@ -889,7 +895,9 @@ bool update_spec(char* request_content, struct spec_data_t* spec){
 
 }
 
-bool udp_get_spec(unsigned char* request_content, int eva){
+bool udp_get_spec(unsigned int command, unsigned char* data){
+
+    int off_set = command - 26;
     //Open file
     FILE* fp = fopen("public/json_data/SPEC.json", "r");
     if (fp == NULL) { 
@@ -926,138 +934,60 @@ bool udp_get_spec(unsigned char* request_content, int eva){
 
     cJSON* eva1_name = eva1->child;
     cJSON* eva1_id = eva1_name->next;
+    cJSON* eva1_data_item = eva1_id->next->child;
+
     cJSON* eva2_name = eva2->child;
     cJSON* eva2_id = eva2_name->next;
-
-    int idx = 0;
-    if(eva != 2){
-        
-        unsigned int name_len = strlen(eva1_name->valuestring);
-        strncpy(request_content + idx + 1, eva1_name->valuestring, name_len);
-        request_content[idx] = name_len & 0xff;
-
-        request_content[name_len + idx + 1] = eva1_id->valueint & 0xff;
-        idx = idx + name_len + 2;
-
-        #ifdef TESTING_MODE
-        for (int i = 0; i < idx; i++){
-            if(i == 0){
-                printf("SPEC Buffer after id: %02x", request_content[i]);
-            }
-            else{
-                printf("%02x", request_content[i]);
-
-                if(i == (idx - 1)){
-                    printf("\n");
-                }
-            }
+    cJSON* eva2_data_item = eva2_id->next->child;
+    
+    if(off_set < 11){
+        if(off_set == 0){
+            union{
+                unsigned int val;
+                unsigned char temp[4];
+            }u;
+            u.val = eva1_id->valueint;
+            memcpy(data, u.temp, 4);
         }
-        #endif
-       
-        cJSON* data_item = eva1_id->next->child;
-        while (data_item != NULL){
-            unsigned int percent = data_item->valueint;
+        else{
+            union{
+                float val;
+                unsigned char temp[4];
+            }u;
 
-            request_content[idx++] = percent & 0xff;
-            data_item = data_item->next;
+            for(int i = 1; i != off_set; i++){
+                eva1_data_item = eva1_data_item->next;
+            }
+            u.val = eva1_data_item->valuedouble;
+
+            memcpy(data, u.temp, 4);
         }
-
-        #ifdef TESTING_MODE
-        idx -= 10;
-        for (int i = 0; i < 10; i++){
-            if(i == 0){
-                printf("SPEC ints: %02x", request_content[idx]);
-            }
-            else{
-                printf("%02x", request_content[idx]);
-
-                if(i == (9)){
-                    printf("\n");
-                }
-            }
-            idx++;
+    }
+    else{
+        off_set -= 11;
+        if(off_set == 0){
+            union{
+                unsigned int val;
+                unsigned char temp[4];
+            }u;
+            u.val = eva2_id->valueint;
+            memcpy(data, u.temp, 4);
         }
+        else{
+            union{
+                float val;
+                unsigned char temp[4];
+            }u;
 
-        for (int i = 0; i < idx; i++){
-            if(i == 0){
-                printf("SPEC Whole buffer: %02x", request_content[i]);
+            for(int i = 1; i != off_set; i++){
+                eva2_data_item = eva2_data_item->next;
             }
-            else{
-                printf("%02x", request_content[i]);
-
-                if(i == (idx - 1)){
-                    printf("\n");
-                }
-            }
+            u.val = eva2_data_item->valuedouble;
+            memcpy(data, u.temp, 4);
         }
-        #endif
     }
 
-    if(eva != 1){
-
-        unsigned int name_len = strlen(eva2_name->valuestring);
-        request_content[idx] = name_len & 0xff;
-        strncpy(request_content + idx + 1, eva2_name->valuestring, name_len);
-
-        unsigned int id = eva2_id->valueint;
-        request_content[name_len + idx + 1] = id & 0xff;
-        idx = idx + name_len + 2;
-
-        #ifdef TESTING_MODE
-        for (int i = 0; i < idx; i++){
-            if(i == 0){
-                printf("SPEC buffer after id: %02x", request_content[i]);
-            }
-            else{
-                printf("%02x", request_content[i]);
-
-                if(i == (idx - 1)){
-                    printf("\n");
-                }
-            }
-        }
-        #endif
-
-        cJSON* data_item = eva2_id->next->child;
-        while (data_item != NULL){
-            unsigned int percent = data_item->valueint;
-
-            request_content[idx++] = percent & 0xff;
-            data_item = data_item->next;
-        }
-
-        #ifdef TESTING_MODE
-        idx -= 10;
-        for (int i = 0; i < 10; i++){
-            if(i == 0){
-                printf("SPEC ints: %02x", request_content[idx]);
-            }
-            else{
-                printf("%02x", request_content[idx]);
-
-                if(i == (9)){
-                    printf("\n");
-                }
-            }
-            idx++;
-        }
-        for (int i = 0; i < idx; i++){
-            if(i == 0){
-                printf("SPEC Whole buffer: %02x", request_content[i]);
-            }
-            else{
-                printf("%02x", request_content[i]);
-
-                if(i == (idx - 1)){
-                    printf("\n");
-                }
-            }
-        }
-        #endif
-        
-    }
-   
-
+    cJSON_Delete(json);
     return true;
 }
 
@@ -1112,7 +1042,7 @@ bool update_comm(char* request_content, struct comm_data_t* comm){
 
 }
 
-bool udp_get_comm(unsigned int* data){
+bool udp_get_comm(unsigned char* data){
     //Open file
     FILE* fp = fopen("public/json_data/COMM.json", "r");
     if (fp == NULL) { 
@@ -1154,7 +1084,8 @@ bool udp_get_comm(unsigned int* data){
     u.comm = cJSON_IsTrue(comm_bool);
     memcpy(data, u.temp, 4);
 
-    printf("Comm: %d\n", *data);
+    cJSON_Delete(json);
+    return true;
 }
 
 // -------------------------- ERROR --------------------------------
@@ -1236,7 +1167,10 @@ bool update_error(char* request_content, struct eva_failures_t* error){
 
 }
 
-bool udp_get_error(unsigned char* request_content){
+bool udp_get_error(unsigned int command, unsigned char* data){
+
+    int off_set = command - 14;
+
     //Open file
     FILE* fp = fopen("public/json_data/ERROR.json", "r");
     if (fp == NULL) { 
@@ -1270,11 +1204,19 @@ bool udp_get_error(unsigned char* request_content){
     cJSON* error = cJSON_GetObjectItemCaseSensitive(json, "error");
     cJSON* error_type = error->child;
 
-    while(error_type != NULL){
-        strcat(request_content, cJSON_IsTrue(error_type) ? "T" : "F");
+    union {
+        bool val;
+        unsigned char temp[4];
+    } u;
+
+    for (int i = 0; i != off_set; i++){
         error_type = error_type->next;
     }
 
+    u.val = cJSON_IsTrue(error_type);
+    memcpy(data, u.temp, 4);
+
+    cJSON_Delete(json);
     return true;
 }
 
