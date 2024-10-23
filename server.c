@@ -28,6 +28,7 @@
 
 bool continue_server();
 void get_contents();
+void int_to_buffer();
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                               Main Functions
@@ -96,28 +97,43 @@ int main(int argc, char* argv[])
         reads = wait_on_clients(clients, server, server);
 
         if(FD_ISSET(server, &reads)){
-            struct client_info_t* client = get_client(&clients, -1);
+            struct client_info_t* udp_clients = NULL;
+            struct client_info_t* client = get_client(&udp_clients, -1);
 
-            client->socket = server;
+            int received_bytes = recvfrom(udp_socket, client->request, MAX_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
 
-            int received_bytes = recvfrom(server, client->request, MAX_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
+            unsigned int time = 0;
+            unsigned int command = 0;
+            unsigned int data = 0;
+
+            get_contents(client->request, &time, &command, &data);
+            
+            printf("time: %d, ", time);
+            printf("command: %d, ", command);
+            printf("data: %d.\n", data);
 
             //check if it's a GET request
-            if (strncmp(client->request, "GET/", 4) == 0){
+            if (command <= 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                char buffer[64] = {0};
-                udp_get_dcu(buffer, 1);
+                handle_udp_get_request(command, &data);
 
-                printf("Buffer: %s\n", buffer);
+                unsigned char response_buffer[12] = {0};
 
-                sendto(server, buffer, sizeof(buffer) + 1, 0, (struct sockaddr*)&client->udp_addr, client->address_length);
+                int buffer_idx = 0;
+                int_to_buffer(&buffer_idx, response_buffer, time);
+                int_to_buffer(&buffer_idx, response_buffer, command);
+                int_to_buffer(&buffer_idx, response_buffer, data);
 
-                drop_udp_client(&clients, client);
+                sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
+
+                printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+
+                drop_udp_client(&udp_clients, client);
 
             }
             //check if it's a POST request
-            else if (strncmp(client->request, "POST/", 5) == 0){
+            else{
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
             }
         }
@@ -129,7 +145,7 @@ int main(int argc, char* argv[])
         simulate_backend(backend);
     }
     
-    // Start HTTP server
+    // Start HTTP and UDP server 
     while(!udp_server){
 
         fd_set reads;
@@ -178,12 +194,18 @@ int main(int argc, char* argv[])
             if (command <= 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                unsigned char response_buffer[256] = {0};
-                handle_udp_get_request(client->request, response_buffer);
+                handle_udp_get_request(command, &data);
 
-                sendto(udp_socket, response_buffer, sizeof(response_buffer) + 1, 0, (struct sockaddr*)&client->udp_addr, client->address_length);
+                unsigned char response_buffer[12] = {0};
 
-                printf("Buffer: %s -- Sent to %s:%d\n", response_buffer, inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+                int buffer_idx = 0;
+                int_to_buffer(&buffer_idx, response_buffer, time);
+                int_to_buffer(&buffer_idx, response_buffer, command);
+                int_to_buffer(&buffer_idx, response_buffer, data);
+
+                sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
+
+                printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 drop_udp_client(&udp_clients, client);
 
@@ -365,6 +387,13 @@ void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsig
     memcpy(time, buffer, 4);
     memcpy(command, buffer + 4, 4);
     memcpy(data, buffer + 8, 4);
+}
+
+void int_to_buffer(int* idx, unsigned char* buffer, unsigned int value){
+    for (int i = 0; i < 4; i++){
+        buffer[*idx] = (value >> 8*i) & 0xff;
+        (*idx)++;
+    }
 }
 
 

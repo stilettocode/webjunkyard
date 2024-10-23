@@ -16,37 +16,15 @@
 
 // --------------------------Handle UDP Request-------------------------------
 
-void handle_udp_get_request(unsigned char* request, unsigned char* response){
-    char* request_type = request + 4;
-    char* request_end = strstr(request_type, "/");
-
-    *request_end = '\0';
-    printf("Request type: %s\n", request_type);
-
-    if(strcmp(request_type, "TEAMS") == 0){
-        udp_get_teams(response);
+void handle_udp_get_request(unsigned int command, unsigned int* data){
+    
+    if(command == 1){
+        printf("Getting comm.\n");
+        udp_get_comm(data);
     }
-    else if(strcmp(request_type, "COMM") == 0){
-        udp_get_comm(response);
-    }
-    else if(strcmp(request_type, "ROVER") == 0){
-        udp_get_rover(response);
-    }
-    else if(strcmp(request_type, "ERROR") == 0){
-        udp_get_error(response);
-    }
-    else if(strcmp(request_type, "IMU") == 0){
-        
-        udp_get_imu(response, 0);
-    }
-    else if(strcmp(request_type, "SPEC") == 0){
-        udp_get_spec(response, 0);
-    }
-    else if(strcmp(request_type, "UIA") == 0){
-        udp_get_uia(response);
-    }
-    else if(strcmp(request_type, "DCU") == 0){
-        udp_get_dcu(response, 0);
+    else if(command < 14){
+        printf("Getting DCU.\n");
+        udp_get_dcu(command, data);
     }
     else{
         printf("Request not found.\n");
@@ -472,7 +450,9 @@ bool update_dcu(char* request_content, struct dcu_data_t* dcu){
 
 }
 
-bool udp_get_dcu(unsigned char* request_content, int eva){
+bool udp_get_dcu(unsigned int command, unsigned int* data){
+
+    int off_set = command - 2;
 
     //Open file
     FILE* fp = fopen("public/json_data/DCU.json", "r");
@@ -486,7 +466,7 @@ bool udp_get_dcu(unsigned char* request_content, int eva){
     unsigned int file_size = ftell(fp);
     rewind(fp);
 
-    printf("file size: %d\n", file_size);
+    //printf("file size: %d\n", file_size);
 
     //Save file to buffer
     char file_buffer[file_size]; 
@@ -510,22 +490,26 @@ bool udp_get_dcu(unsigned char* request_content, int eva){
     cJSON* eva1_item = eva1->child;
     cJSON* eva2_item = eva2->child;
 
-    if(eva == 1 || eva != 2){
-        while (eva1_item != NULL){
-        printf("Eva1: %s:%s\n", eva1_item->string, cJSON_IsTrue(eva1_item) ? "true" : "false");
-        strcat(request_content, cJSON_IsTrue(eva1_item) ? "T" : "F");
+    union {
+        unsigned int val;
+        unsigned char temp[4];
+    } u;
 
-        eva1_item = eva1_item->next;
+    if (off_set < 6){
+        for (int i = 0; i != off_set; i++){
+            eva1_item = eva1_item->next;
         }
+        u.val = eva1_item->valueint;
+        memcpy(data, u.temp, 4);
     }
-    else if(eva == 2 || eva != 1){
-        while (eva2_item != NULL){
-            printf("Eva2: %s:%s\n", eva2_item->string, cJSON_IsTrue(eva2_item) ? "true" : "false");
-            strcat(request_content, cJSON_IsTrue(eva2_item) ? "T" : "F");
-
+    else{
+        off_set -= 6;
+        for (int i = 0; i != off_set; i++){
             eva2_item = eva2_item->next;
         }
-    }
+        u.val = eva2_item->valueint;
+        memcpy(data, u.temp, 4);
+    }   
     
     cJSON_Delete(json);
     return true;
@@ -1128,7 +1112,7 @@ bool update_comm(char* request_content, struct comm_data_t* comm){
 
 }
 
-bool udp_get_comm(unsigned char* request_content){
+bool udp_get_comm(unsigned int* data){
     //Open file
     FILE* fp = fopen("public/json_data/COMM.json", "r");
     if (fp == NULL) { 
@@ -1162,8 +1146,15 @@ bool udp_get_comm(unsigned char* request_content){
     cJSON* comm = cJSON_GetObjectItemCaseSensitive(json, "comm");
     cJSON* comm_bool = comm->child;
 
-    strcat(request_content, cJSON_IsTrue(comm_bool) ? "T" : "F");
-    printf("Comm: %s\n", request_content);
+    union{
+        bool comm;
+        unsigned char temp[4];
+    } u;
+
+    u.comm = cJSON_IsTrue(comm_bool);
+    memcpy(data, u.temp, 4);
+
+    printf("Comm: %d\n", *data);
 }
 
 // -------------------------- ERROR --------------------------------

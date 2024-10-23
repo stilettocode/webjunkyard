@@ -267,14 +267,14 @@ void simulate_telemetry(struct telemetry_data_t telemetry);
 void simulate_backend  (struct backend_data_t* backend);
 
 // UDP functions
-bool udp_get_dcu(unsigned char* request_content, int eva);
+bool udp_get_dcu(unsigned int command, unsigned int* data);
 bool udp_get_uia(unsigned char* request_content);
 bool udp_get_spec(unsigned char* request_content, int eva);
 bool udp_get_imu(unsigned char* request_content, int eva);
 bool udp_get_error(unsigned char* request_content);
 bool udp_get_rover(unsigned char* request_content);
-bool udp_get_comm(unsigned char* request_content);
+bool udp_get_comm(unsigned int* data);
 bool udp_get_teams(unsigned char* request_content);
-void handle_udp_get_request(unsigned char* request, unsigned char* response);
+void handle_udp_get_request(unsigned int command, unsigned int* data);
 
 #endif
