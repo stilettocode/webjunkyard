@@ -27,6 +27,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 bool continue_server();
+void get_contents();
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                               Main Functions
@@ -163,10 +164,19 @@ int main(int argc, char* argv[])
 
             int received_bytes = recvfrom(udp_socket, client->request, MAX_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
 
+            unsigned int time = 0;
+            unsigned int command = 0;
+            unsigned int data = 0;
+
+            get_contents(client->request, &time, &command, &data);
+            
+            printf("time: %d, ", time);
+            printf("command: %d, ", command);
+            printf("data: %d.\n", data);
+
             //check if it's a GET request
-            if (strncmp(client->request, "GET/", 4) == 0){
+            if (command <= 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-                printf("Received: %s.\n", client->request);
 
                 unsigned char response_buffer[256] = {0};
                 handle_udp_get_request(client->request, response_buffer);
@@ -179,7 +189,7 @@ int main(int argc, char* argv[])
 
             }
             //check if it's a POST request
-            else if (strncmp(client->request, "POST/", 5) == 0){
+            else{
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
             }
         }
@@ -349,6 +359,12 @@ bool continue_server(){
     } else {
         return true;
     }
+}
+
+void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsigned int* data){
+    memcpy(time, buffer, 4);
+    memcpy(command, buffer + 4, 4);
+    memcpy(data, buffer + 8, 4);
 }
 
 

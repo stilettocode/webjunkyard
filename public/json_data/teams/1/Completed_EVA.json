@@ -4,26 +4,26 @@
 		"started": true,
 		"paused": false,
 		"completed": true,
-		"total_time": 190,
+		"total_time": 1,
 		"uia": {
-			"started": true,
-			"completed": false,
-			"time": 185
+			"started": false,
+			"completed": true,
+			"time": 0
 		},
 		"dcu": {
-			"started": true,
-			"completed": false,
-			"time": 182
+			"started": false,
+			"completed": true,
+			"time": 0
 		},
 		"rover": {
-			"started": true,
-			"completed": false,
-			"time": 183
+			"started": false,
+			"completed": true,
+			"time": 0
 		},
 		"spec": {
-			"started": true,
-			"completed": false,
-			"time": 184
+			"started": false,
+			"completed": true,
+			"time": 0
 		}
 	}
 }
