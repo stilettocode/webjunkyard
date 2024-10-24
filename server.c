@@ -28,7 +28,6 @@
 
 bool continue_server();
 void get_contents();
-void int_to_buffer();
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                               Main Functions
@@ -72,12 +71,7 @@ int main(int argc, char* argv[])
 
     // Create server sockets 
     if(udp_server){
-        server = create_udp_socket(hostname, port);
-        if (server == -1){
-            perror("Problem createing socket");
-
-            return EXIT_FAILURE;
-        }
+        udp_socket = create_udp_socket(hostname, port);
     }
     else{
         server = create_socket(hostname, port);
@@ -94,9 +88,11 @@ int main(int argc, char* argv[])
     while(udp_server){
 
         fd_set reads;
-        reads = wait_on_clients(clients, server, server);
+        reads = wait_on_clients(clients, server, udp_socket);
 
-        if(FD_ISSET(server, &reads)){
+        // Handle UDP
+        if(FD_ISSET(udp_socket, &reads)){
+
             struct client_info_t* udp_clients = NULL;
             struct client_info_t* client = get_client(&udp_clients, -1);
 
@@ -104,7 +100,7 @@ int main(int argc, char* argv[])
 
             unsigned int time = 0;
             unsigned int command = 0;
-            unsigned char data[4] = {0};
+            char data[4] = {0};
 
             get_contents(client->request, &time, &command, data);
             
@@ -122,9 +118,8 @@ int main(int argc, char* argv[])
 
                 unsigned char response_buffer[12] = {0};
 
-                int buffer_idx = 0;
-                int_to_buffer(&buffer_idx, response_buffer, time);
-                int_to_buffer(&buffer_idx, response_buffer, command);
+                memcpy(response_buffer, &time, 4);
+                memcpy(response_buffer + 4, &command, 4);
                 memcpy(response_buffer + 8, data, 4);
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
@@ -202,9 +197,8 @@ int main(int argc, char* argv[])
 
                 unsigned char response_buffer[12] = {0};
 
-                int buffer_idx = 0;
-                int_to_buffer(&buffer_idx, response_buffer, time);
-                int_to_buffer(&buffer_idx, response_buffer, command);
+                memcpy(response_buffer, &time, 4);
+                memcpy(response_buffer + 4, &command, 4);
                 memcpy(response_buffer + 8, data, 4);
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
@@ -393,11 +387,18 @@ void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsig
     memcpy(data, buffer + 8, 4);
 }
 
-void int_to_buffer(int* idx, unsigned char* buffer, unsigned int value){
-    for (int i = 0; i < 4; i++){
-        buffer[*idx] = (value >> 8*i) & 0xff;
-        (*idx)++;
+int big_small_endian(){
+    unsigned int i = 0;
+    unsigned char temp[4];
+
+    memcpy(temp, &i, 4);
+
+    if(temp[0] == 1){
+        //System is big-endian
+        return 1;
+    }
+    else{
+        //System is small-endian
+        return 0;
     }
 }
-
-

@@ -275,6 +275,9 @@ bool udp_get_error(unsigned int command, unsigned char* data);
 bool udp_get_rover(unsigned int command, unsigned char* data);
 bool udp_get_comm(unsigned char* data);
 bool udp_get_teams(unsigned char* request_content);
+bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data);
+bool udp_get_rover_telemetry(unsigned int command, unsigned int team_number, unsigned char* data);
 void handle_udp_get_request(unsigned int command, unsigned char* data);
+
 
 #endif
