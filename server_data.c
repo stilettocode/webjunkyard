@@ -73,7 +73,7 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
 
 // --------------------------UDP Get Teams---------------------------
 
-char* itoa(int val, int base){
+char* itoa_custom(int val, int base){
 	
 	static char buf[32] = {0};
 	
@@ -124,7 +124,7 @@ bool udp_get_teams(unsigned char* request_content){
     while (team != NULL){
         if (cJSON_IsNumber(team) == true){
         
-            char* temp = itoa(team->valueint, 10);
+            char* temp = itoa_custom(team->valueint, 10);
             strcat(request_content, temp);
 
             break;
