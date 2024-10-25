@@ -1,0 +1,39 @@
+{
+    "telemetry": {
+        "time": 0.000000,
+        "rover": {
+            "mission_elapsed_time" : 0.000000,
+            "mission_planned_time" : 0.000000,
+            "point_of_no_return" : 0.000000,
+            "distance_from_base" : 0.000000,
+            "current_posx" : 0.000000,
+            "current_posy" : 0.000000,
+            "heading_x" : 0.000000,
+            "heading_y" : 0.000000,
+            "pitch" : 0.000000,
+            "roll" : 0.000000,
+            "distance_traveled" : 0.000000,
+            "speed" : 0.000000,
+            "motor_power_consumption" : 0.000000,
+            "terrain_condition" : 0.000000,
+            "surface_incline" : 0.000000,
+            "solar_panel_dust_acucumulation" : 0.000000,
+            "lidar_sensor" : 0.000000,
+            "external_temp" : 0.000000,
+            "coolant_level" : 0.000000,
+            "coolant_pressure" : 0.000000,
+            "coolant_storage_level" : 0.000000,
+            "battery_level" : 0.000000,
+            "power_consumption_rate" : 0.000000,
+            "solar_panel_efficiency" : 0.000000,
+            "internal_lights" : false,
+            "external_lights" : false,
+            "oxygen_levels" : 0.000000,
+            "co2_scrub" : false,
+            "ac_fan" : false,
+            "cabin_pressure" : 0.000000,
+            "airlock_pressure" : 0.000000,
+            "cabin_temperature" : 0.000000
+        } 
+    }
+}
