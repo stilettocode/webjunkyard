@@ -65,6 +65,14 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
 
         udp_get_rover_telemetry(command, team_number, data);
     }
+    else if(command < 152){
+        printf("Getting EVA.\n");
+        unsigned int team_number = 0;
+        memcpy(&team_number, data, 4);
+        printf("Team number: %d\n", team_number);
+
+        udp_get_eva(command, team_number, data);
+    }
     else{
         printf("Request not found.\n");
     }
@@ -1794,7 +1802,7 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
     int off_set = command - 58;
 
     char start_path[50] = "public/json_data/teams/";
-    char team[3];
+    char team[3] = "";
     char* end_path = "/TELEMETRY.json";
 
     sprintf(team, "%d", team_number);
@@ -1839,21 +1847,16 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
     cJSON* eva2 = eva1->next;
     cJSON* eva2_item = eva2->child;
 
+    union{
+        float val;
+        unsigned char temp[4];
+    }u;
+            
     if(off_set < 23){
         if(off_set == 0){
-            union{
-                unsigned int val;
-                unsigned char temp[4];
-            }u;
-            
-            u.val = eva_time->valueint;
+            u.val = eva_time->valuedouble;
             memcpy(data, u.temp, 4);
         }else{
-            union {
-                float val;
-                unsigned char temp[4];
-            }u;
-
             for (int i = 1; i != off_set; i++){
                 eva1_item = eva1_item->next;
             }
@@ -1865,11 +1868,6 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
     else{
         off_set -= 23;
         
-        union {
-            float val;
-            unsigned char temp[4];
-        }u;
-
         for (int i = 0; i != off_set; i++){
             eva2_item = eva2_item->next;
         }
@@ -1886,7 +1884,7 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned int team_number, uns
     int off_set = command - 103;
 
     char start_path[50] = "public/json_data/teams/";
-    char team[3];
+    char team[3] = "";
     char* end_path = "/ROVER_TELEMETRY.json";
 
     sprintf(team, "%d", team_number);
@@ -1958,6 +1956,168 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned int team_number, uns
 
     cJSON_Delete(json);
     return true;
+}
+
+bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* data){
+    int off_set = command - 136;
+
+    char start_path[50] = "public/json_data/teams/";
+    char team[3] = "";
+    char* end_path = "/EVA.json";
+
+    sprintf(team, "%d", team_number);
+    strcat(start_path, team);
+    strcat(start_path, end_path);
+    
+    FILE* fp = fopen(start_path, "r");
+    if (fp == NULL) { 
+        printf("Error: Unable to open the file.\n"); 
+        return false; 
+    } 
+
+    //Get file size
+    fseek(fp, 0L, SEEK_END);
+    unsigned int file_size = ftell(fp);
+    rewind(fp);
+
+    //printf("file size: %d\n", file_size);
+
+    //Save file to buffer
+    char file_buffer[file_size]; 
+    int len = fread(file_buffer, 1, file_size, fp); 
+    fclose(fp); 
+
+    //Parse buffer to cJSON object
+    cJSON *json = cJSON_Parse(file_buffer); 
+    if (json == NULL) { 
+        const char *error_ptr = cJSON_GetErrorPtr(); 
+        if (error_ptr != NULL) { 
+            printf("Error: %s\n", error_ptr); 
+        } 
+        cJSON_Delete(json); 
+        return false; 
+    } 
+
+    cJSON* eva = cJSON_GetObjectItemCaseSensitive(json, "eva");
+    cJSON* uia = cJSON_GetObjectItemCaseSensitive(eva, "uia");
+    cJSON* dcu = cJSON_GetObjectItemCaseSensitive(eva, "dcu");
+    cJSON* rover = cJSON_GetObjectItemCaseSensitive(eva, "rover");
+    cJSON* spec = cJSON_GetObjectItemCaseSensitive(eva, "spec");
+
+    union {
+        float val;
+        unsigned char temp[4];
+    }u;
+
+    if(off_set < 4){
+        cJSON* eva_item = eva->child;
+        for(int i = 0; i != off_set; i++){
+            eva_item = eva_item->next;
+        }
+
+        if(cJSON_IsBool(eva_item)){
+            union {
+                bool val;
+                unsigned char temp[4];
+            }u;
+            u.val = cJSON_IsTrue(eva_item);
+            memcpy(data, u.temp, 4);
+        }
+        else{
+            u.val = eva_item->valuedouble;
+            memcpy(data, u.temp, 4);
+        }
+    }
+    else if(off_set < 7){
+        off_set -= 4;
+        cJSON* uia_item = uia->child;
+
+        for(int i = 0; i != off_set; i++){
+            uia_item = uia_item->next;
+        }
+        
+        if(cJSON_IsBool(uia_item)){
+            union {
+                bool val;
+                unsigned char temp[4];
+            }u;
+            u.val = cJSON_IsTrue(uia_item);
+            memcpy(data, u.temp, 4);
+        }
+        else{
+            u.val = uia_item->valuedouble;
+            memcpy(data, u.temp, 4);
+        }
+
+    }
+    else if(off_set < 10){
+        off_set -= 7;
+        cJSON* dcu_item = dcu->child;
+
+        for(int i = 0; i != off_set; i++){
+            dcu_item = dcu_item->next;
+        }
+        
+        if(cJSON_IsBool(dcu_item)){
+            union {
+                bool val;
+                unsigned char temp[4];
+            }u;
+            u.val = cJSON_IsTrue(dcu_item);
+            memcpy(data, u.temp, 4);
+        }
+        else{
+            u.val = dcu_item->valuedouble;
+            memcpy(data, u.temp, 4);
+        }
+    }
+    else if(off_set < 13){
+        off_set -= 10;
+        cJSON* rover_item = rover->child;
+
+
+        for(int i = 0; i != off_set; i++){
+            rover_item = rover_item->next;
+        }
+        
+        if(cJSON_IsBool(rover_item)){
+            union {
+                bool val;
+                unsigned char temp[4];
+            }u;
+            u.val = cJSON_IsTrue(rover_item);
+            memcpy(data, u.temp, 4);
+        }
+        else{
+            u.val = rover_item->valuedouble;
+            memcpy(data, u.temp, 4);
+        }
+    }
+    else{
+        off_set -= 13;
+        cJSON* spec_item = spec->child;
+
+        for(int i = 0; i != off_set; i++){
+            spec_item = spec_item->next;
+        }
+        
+        if(cJSON_IsBool(spec_item)){
+            union {
+                bool val;
+                unsigned char temp[4];
+            }u;
+            u.val = cJSON_IsTrue(spec_item);
+            memcpy(data, u.temp, 4);
+        }
+        else{
+            u.val = spec_item->valuedouble;
+            memcpy(data, u.temp, 4);
+        }
+    }
+
+    
+
+
 }
 
 // -------------------------- Update --------------------------------
