@@ -12,24 +12,66 @@
 //                                 Functions
 ///////////////////////////////////////////////////////////////////////////////////
 
-void get_ip_address(char* hostname_out){
-    
+void get_ip_address(char* hostname_out) {
+
     // initialize default hostname
     memset(hostname_out, 0, 16);
     strcpy(hostname_out, "127.0.0.1");
 
+#if defined(_WIN32)
+    PIP_ADAPTER_INFO pAdapterInfo;
+    PIP_ADAPTER_INFO pAdapter = NULL;
+    DWORD dwRetVal = 0;
+
+    ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+    pAdapterInfo = (IP_ADAPTER_INFO*)malloc(sizeof(IP_ADAPTER_INFO));
+    if (pAdapterInfo == NULL) {
+        printf("Error allocating memory needed to call GetAdaptersinfo\n");
+        return;
+    }
+    // Make an initial call to GetAdaptersInfo to get
+    // the necessary size into the ulOutBufLen variable
+    if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
+        free(pAdapterInfo);
+        pAdapterInfo = (IP_ADAPTER_INFO*)malloc(ulOutBufLen);
+        if (pAdapterInfo == NULL) {
+            printf("Error allocating memory needed to call GetAdaptersinfo\n");
+            return;
+        }
+    }
+
+    if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
+        pAdapter = pAdapterInfo;
+        while (pAdapter) {
+            char* ipAddr = pAdapter->IpAddressList.IpAddress.String;
+            if (strcmp(ipAddr, "127.0.0.1") != 0 && strcmp(ipAddr, "0.0.0.0") != 0) {
+                memset(hostname_out, 0, 16);
+                strcpy(hostname_out, ipAddr);
+            }
+
+            pAdapter = pAdapter->Next;
+        }
+    }
+    else {
+        printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);
+
+    }
+    if (pAdapterInfo)
+        free(pAdapterInfo);
+
+#else
     // Get all addresses
-    struct ifaddrs *addresses;
+    struct ifaddrs* addresses;
     if (getifaddrs(&addresses) == -1) {
         printf("getifaddrs call failed\n");
         return;
     }
 
     // Loop through addresses and find a non local host IP4 address
-    struct ifaddrs *address = addresses;
-    while(address) {
+    struct ifaddrs* address = addresses;
+    while (address) {
         // skip if the address is NULL
-        if (address->ifa_addr == NULL) { 
+        if (address->ifa_addr == NULL) {
             address = address->ifa_next;
             continue;
         }
@@ -41,9 +83,8 @@ void get_ip_address(char* hostname_out){
             char ap[100];
             const int family_size = sizeof(struct sockaddr_in);
             getnameinfo(address->ifa_addr, family_size, ap, sizeof(ap), 0, 0, NI_NUMERICHOST);
-
             // Check that it isn't local host
-            if(strcmp(ap, "127.0.0.1") != 0){
+            if (strcmp(ap, "127.0.0.1") != 0) {
                 memset(hostname_out, 0, 16);
                 strcpy(hostname_out, ap);
             }
@@ -52,6 +93,7 @@ void get_ip_address(char* hostname_out){
         address = address->ifa_next;
     }
     freeifaddrs(addresses);
+#endif
 }
 
 const char* get_content_type(const char* path){

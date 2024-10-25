@@ -336,7 +336,10 @@ int main(int argc, char* argv[])
 
     printf("Closing Sockets...\n");
     CLOSESOCKET(server);
+#if defined(_WIN32)
+#else
     close(udp_socket);
+#endif
 
     printf("Cleaned up server listen sockets\n");
     int leftover_clients = 0;
