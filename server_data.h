@@ -160,6 +160,33 @@ struct telemetry_data_t {
 
 };
 
+// Pressurized Rover Data
+struct pr_data_t {
+
+    //udapte rover_index() in server_data.c if order of variables is changed
+    bool ac_heating;
+    bool ac_cooling;
+    bool lights_on;
+    bool breaks;        //drive commands
+    bool in_sunlight;   //from Unreal
+
+    // Drive Commands
+    float throttle;
+    float steering;
+
+    // Data From Unreal
+    float current_pos_x;
+    float current_pos_y;
+    float current_pos_alt;
+    float heading;
+    float pitch;
+    float roll;
+    float distance_traveled;
+    float speed;
+    float surface_incline;
+    float lidar[]; //not yet implemented
+};
+
 struct eva_failures_t {
     
     bool oxy_error;
@@ -221,6 +248,7 @@ struct backend_data_t {
     struct rover_data_t     rover;
     struct spec_data_t      spec;
     struct comm_data_t      comm;
+    struct pr_data_t        p_rover;
 
     // Simulated Data
     struct eva_failures_t   failures;
@@ -266,7 +294,7 @@ float randomized_sine_value(float x, float avg, float amp, float phase, float fr
 void simulate_telemetry(struct telemetry_data_t telemetry);
 void simulate_backend  (struct backend_data_t* backend);
 
-// UDP functions
+// UDP GET functions
 bool udp_get_dcu(unsigned int command, unsigned char* data);
 bool udp_get_uia(unsigned int command, unsigned char* data);
 bool udp_get_spec(unsigned int command, unsigned char* data);
@@ -279,5 +307,9 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
 bool udp_get_rover_telemetry(unsigned int command, unsigned int team_number, unsigned char* data);
 bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* data);
 void handle_udp_get_request(unsigned int command, unsigned char* data);
+
+// UDP POST functions
+bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend);
+void handle_udp_post_request(unsigned int command, unsigned char* data, struct backend_data_t* backend);
 
 #endif

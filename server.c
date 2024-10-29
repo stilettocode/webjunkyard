@@ -106,9 +106,9 @@ int main(int argc, char* argv[])
             
             printf("time: %d, ", time);
             printf("command: %d, ", command);
-            unsigned int value = 0;
+            float value = 0;
             memcpy(&value, data, 4);
-            printf("data: %u.\n", value);
+            printf("data: %f\n", value);
 
             //check if it's a GET request
             if (command <= 1000){
@@ -132,6 +132,8 @@ int main(int argc, char* argv[])
             //check if it's a POST request
             else{
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+
+                handle_udp_post_request(command, data, backend);
             }
         }
 
@@ -185,12 +187,12 @@ int main(int argc, char* argv[])
             
             printf("time: %d, ", time);
             printf("command: %d, ", command);
-            unsigned int value = 0;
+            float value = 0;
             memcpy(&value, data, 4);
-            printf("data: %u.\n", value);
+            printf("data: %f.\n", value);
 
             //check if it's a GET request
-            if (command <= 1000){
+            if (command < 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 handle_udp_get_request(command, data);
@@ -211,6 +213,9 @@ int main(int argc, char* argv[])
             //check if it's a POST request
             else{
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+
+                handle_udp_post_request(command, data, backend);
+                
             }
         }
 

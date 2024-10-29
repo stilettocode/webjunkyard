@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <time.h>
 
+// Helper functions
+size_t rover_index();
+
 ///////////////////////////////////////////////////////////////////////////////////
 //                                 Functions
 ///////////////////////////////////////////////////////////////////////////////////
@@ -52,24 +55,30 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
     else if(command < 103){
         printf("Getting Telemetry.\n");
         unsigned int team_number = 0;
-        memcpy(&team_number, data, 4);
-        printf("Team number: %d\n", team_number);
+        float fl;
+        memcpy(&fl, data, 4);
+        team_number = (unsigned int)fl;
+        printf("Team number: %u\n", team_number);
 
         udp_get_telemetry(command, team_number, data);
     }
     else if(command < 136){
         printf("Getting Rover_Telemetry.\n");
         unsigned int team_number = 0;
-        memcpy(&team_number, data, 4);
-        printf("Team number: %d\n", team_number);
+        float fl;
+        memcpy(&fl, data, 4);
+        team_number = (unsigned int)fl;
+        printf("Team number: %u\n", team_number);
 
         udp_get_rover_telemetry(command, team_number, data);
     }
     else if(command < 152){
         printf("Getting EVA.\n");
         unsigned int team_number = 0;
-        memcpy(&team_number, data, 4);
-        printf("Team number: %d\n", team_number);
+        float fl;
+        memcpy(&fl, data, 4);
+        team_number = (unsigned int)fl;
+        printf("Team number: %u\n", team_number);
 
         udp_get_eva(command, team_number, data);
     }
@@ -77,6 +86,20 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
         printf("Request not found.\n");
     }
 
+}
+
+void handle_udp_post_request(unsigned int command, unsigned char* data, struct backend_data_t* backend){
+
+    if(command < 1103){
+        printf("Not yet implemented.\n");
+    }
+    else if(command < 1136){
+        printf("Posting Telemetry.\n");
+        udp_post_rover_telemetry(command, data, backend);
+    }
+    else{
+        printf("Request not found.\n");
+    }
 }
 
 // --------------------------UDP Get Teams---------------------------
@@ -547,7 +570,7 @@ bool udp_get_dcu(unsigned int command, unsigned char* data){
     cJSON* eva2_item = eva2->child;
 
     union {
-        unsigned int val;
+        bool val;
         unsigned char temp[4];
     } u;
 
@@ -815,18 +838,11 @@ bool udp_get_rover(unsigned int command, unsigned char* data){
         unsigned char temp[4];
     } u;
 
-    if (off_set < 2){
-        for (int i = 0; i != off_set; i++){
-            rover_item = rover_item->next;
-        }
-        u.fl = rover_item->valuedouble;
-        memcpy(data, u.temp, 4);
+    for (int i = 0; i != off_set; i++){
+        rover_item = rover_item->next;
     }
-    else {
-        rover_item = rover_item->next->next;
-        u.fl = rover_item->valueint;
-        memcpy(data, u.temp, 4);
-    }
+    u.fl = rover_item->valuedouble;
+    memcpy(data, u.temp, 4);
 
     cJSON_Delete(json);
     return true;
@@ -2114,10 +2130,29 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
             memcpy(data, u.temp, 4);
         }
     }
+}
 
-    
+bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
+    int off_set = command - 1103;
 
+    char* p_rover = (char*)&(backend->p_rover);
 
+    p_rover += rover_index(off_set);
+
+    if (off_set < 5){
+        bool val;
+        memcpy(&val, data, 1);
+
+        *(bool*)p_rover = val;
+    }
+    else {
+        float val;
+        memcpy(&val, data, 4);
+
+        *(float*)p_rover = val;
+    }
+
+    return true;
 }
 
 // -------------------------- Update --------------------------------
@@ -2198,6 +2233,30 @@ void simulate_backend(struct backend_data_t* backend){
 
     }
 
+}
+
+// Access pr_data_t struct by index
+size_t rover_index(int idx){
+    size_t offsets[] = {
+        offsetof(struct pr_data_t, ac_heating),
+        offsetof(struct pr_data_t, ac_cooling),
+        offsetof(struct pr_data_t, lights_on),
+        offsetof(struct pr_data_t, breaks),
+        offsetof(struct pr_data_t, in_sunlight),
+        offsetof(struct pr_data_t, throttle),
+        offsetof(struct pr_data_t, steering),
+        offsetof(struct pr_data_t, current_pos_x),
+        offsetof(struct pr_data_t, current_pos_y),
+        offsetof(struct pr_data_t, current_pos_alt),
+        offsetof(struct pr_data_t, heading),
+        offsetof(struct pr_data_t, pitch),
+        offsetof(struct pr_data_t, roll),
+        offsetof(struct pr_data_t, distance_traveled),
+        offsetof(struct pr_data_t, speed),
+        offsetof(struct pr_data_t, surface_incline)
+    };
+
+    return offsets[idx];
 }
 
 
