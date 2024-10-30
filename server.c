@@ -20,14 +20,16 @@
 
 // Uncomment this for extra print statements
 // #define VERBOSE_MODE 
-// #define TESTING_MODE
+#define TESTING_MODE
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                      Helper Functions Declarations
 ///////////////////////////////////////////////////////////////////////////////////
 
 bool continue_server();
+bool big_endian();
 void get_contents();
+void reverse_bytes();
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                               Main Functions
@@ -78,6 +80,10 @@ int main(int argc, char* argv[])
         udp_socket = create_udp_socket(hostname, port);
     }
 
+    #ifdef TESTING_MODE
+        printf("\nBig endian system: %s\n", big_endian() ? "yes" : "no");
+    #endif
+
     // "Data Base" Data
     struct backend_data_t* backend = init_backend(backend);
 
@@ -104,11 +110,16 @@ int main(int argc, char* argv[])
 
             get_contents(client->request, &time, &command, data);
             
-            printf("time: %d, ", time);
-            printf("command: %d, ", command);
-            float value = 0;
-            memcpy(&value, data, 4);
-            printf("data: %f\n", value);
+            #ifdef TESTING_MODE
+                printf("time: %d, ", time);
+                printf("command: %d, ", command);
+                float value = 0;
+                memcpy(&value, data, 4);
+                printf("data float: %f\n", value);
+                int valuei = 0;
+                memcpy(&valuei, data, 4);
+                printf("data int: %d\n", valuei);
+            #endif
 
             //check if it's a GET request
             if (command <= 1000){
@@ -179,6 +190,12 @@ int main(int argc, char* argv[])
 
             int received_bytes = recvfrom(udp_socket, client->request, MAX_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
 
+            if(!big_endian()){
+                reverse_bytes(client->request);
+                reverse_bytes(client->request + 4);
+                reverse_bytes(client->request + 8);   
+            }
+
             unsigned int time = 0;
             unsigned int command = 0;
             char data[4] = {0};
@@ -202,6 +219,12 @@ int main(int argc, char* argv[])
                 memcpy(response_buffer, &time, 4);
                 memcpy(response_buffer + 4, &command, 4);
                 memcpy(response_buffer + 8, data, 4);
+
+                if(!big_endian()){
+                    reverse_bytes(response_buffer);
+                    reverse_bytes(response_buffer + 4);
+                    reverse_bytes(response_buffer + 8);
+                }
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
@@ -395,18 +418,28 @@ void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsig
     memcpy(data, buffer + 8, 4);
 }
 
-int big_small_endian(){
-    unsigned int i = 0;
+bool big_endian(){
+    unsigned int i = 1;
     unsigned char temp[4];
 
     memcpy(temp, &i, 4);
 
     if(temp[0] == 1){
         //System is big-endian
-        return 1;
+        return true;
     }
     else{
         //System is small-endian
-        return 0;
+        return false;
+    }
+}
+
+void reverse_bytes(unsigned char* bytes){
+    //expects 4 bytes to be flippled
+    char temp;
+    for(int i = 0; i < 2; i++){
+        temp = bytes[i];
+        bytes[i] = bytes[3 - i];
+        bytes[3 - i] = temp;
     }
 }

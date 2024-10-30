@@ -64,13 +64,8 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
     }
     else if(command < 136){
         printf("Getting Rover_Telemetry.\n");
-        unsigned int team_number = 0;
-        float fl;
-        memcpy(&fl, data, 4);
-        team_number = (unsigned int)fl;
-        printf("Team number: %u\n", team_number);
 
-        udp_get_rover_telemetry(command, team_number, data);
+        udp_get_rover_telemetry(command, data);
     }
     else if(command < 152){
         printf("Getting EVA.\n");
@@ -188,6 +183,7 @@ struct backend_data_t* init_backend(){
     build_json_rover(&backend->rover);
     build_json_spec(&backend->spec);
     build_json_comm(&backend->comm);
+    build_json_rover_telemetry(&backend->p_rover, false);
 
     for(int i = 0; i < NUMBER_OF_TEAMS; i++){
         build_json_eva(&backend->evas[i], i, false);
@@ -1559,6 +1555,57 @@ bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed
 
 }
 
+bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
+
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddItemToObject(json, "pr_telemetry", cJSON_CreateObject());
+
+    cJSON* pr_telemetry = cJSON_GetObjectItemCaseSensitive(json, "pr_telemetry");
+
+    cJSON_AddItemToObject(pr_telemetry, "ac_heating", cJSON_CreateBool(rover->ac_heating));
+    cJSON_AddItemToObject(pr_telemetry, "ac_cooling", cJSON_CreateBool(rover->ac_cooling));
+    cJSON_AddItemToObject(pr_telemetry, "lights_on", cJSON_CreateBool(rover->lights_on));
+    cJSON_AddItemToObject(pr_telemetry, "breaks", cJSON_CreateBool(rover->in_sunlight));
+    cJSON_AddItemToObject(pr_telemetry, "in_sunlight", cJSON_CreateBool(rover->in_sunlight));
+    cJSON_AddItemToObject(pr_telemetry, "throttle", cJSON_CreateNumber(rover->throttle));
+    cJSON_AddItemToObject(pr_telemetry, "steering", cJSON_CreateNumber(rover->steering));
+    cJSON_AddItemToObject(pr_telemetry, "current_pos_x", cJSON_CreateNumber(rover->current_pos_x));
+    cJSON_AddItemToObject(pr_telemetry, "current_pos_y", cJSON_CreateNumber(rover->current_pos_y));
+    cJSON_AddItemToObject(pr_telemetry, "current_pos_alt", cJSON_CreateNumber(rover->current_pos_alt));
+    cJSON_AddItemToObject(pr_telemetry, "heading", cJSON_CreateNumber(rover->heading));
+    cJSON_AddItemToObject(pr_telemetry, "pitch", cJSON_CreateNumber(rover->pitch));
+    cJSON_AddItemToObject(pr_telemetry, "roll", cJSON_CreateNumber(rover->roll));
+    cJSON_AddItemToObject(pr_telemetry, "distance_traveled", cJSON_CreateNumber(rover->distance_traveled));
+    cJSON_AddItemToObject(pr_telemetry, "speed", cJSON_CreateNumber(rover->speed));
+    cJSON_AddItemToObject(pr_telemetry, "surface_incline", cJSON_CreateNumber(rover->surface_incline));
+    cJSON_AddItemToObject(pr_telemetry, "lidar", cJSON_CreateArray());
+
+    char* json_str = cJSON_Print(json);
+
+    FILE* fp;
+
+    if(completed){
+        fp = fopen("public/json_data/COMPLETED_ROVER_TELEMETRY.json", "w");
+        if (fp == NULL) { 
+            printf("Error: Unable to open the file.\n"); 
+            return false; 
+        }
+    }
+    else{
+        fp = fopen("public/json_data/ROVER_TELEMETRY.json", "w");
+        if (fp == NULL) { 
+            printf("Error: Unable to open the file.\n"); 
+            return false; 
+        }
+    }
+
+    fputs(json_str, fp);
+    fclose(fp);
+
+    cJSON_free(json_str);
+    cJSON_free(json);
+}
+
 float fourier_sin(float x){
     // Constants
     float a = 0.5f;
@@ -1896,18 +1943,10 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
     return true;
 }
 
-bool udp_get_rover_telemetry(unsigned int command, unsigned int team_number, unsigned char* data){
+bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
     int off_set = command - 103;
 
-    char start_path[50] = "public/json_data/teams/";
-    char team[3] = "";
-    char* end_path = "/ROVER_TELEMETRY.json";
-
-    sprintf(team, "%d", team_number);
-    strcat(start_path, team);
-    strcat(start_path, end_path);
-    
-    FILE* fp = fopen(start_path, "r");
+    FILE* fp = fopen("public/json_data/ROVER_TELEMETRY.json", "r");
     if (fp == NULL) { 
         printf("Error: Unable to open the file.\n"); 
         return false; 
@@ -1917,8 +1956,6 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned int team_number, uns
     fseek(fp, 0L, SEEK_END);
     unsigned int file_size = ftell(fp);
     rewind(fp);
-
-    //printf("file size: %d\n", file_size);
 
     //Save file to buffer
     char file_buffer[file_size]; 
@@ -1936,38 +1973,31 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned int team_number, uns
         return false; 
     } 
 
-    cJSON* rover_telemetry = cJSON_GetObjectItemCaseSensitive(json, "telemetry");
-    cJSON* rover_time = rover_telemetry->child;
-    cJSON* rover_item = rover_time->next->child;
-
+    cJSON* rover_telemetry = cJSON_GetObjectItemCaseSensitive(json, "pr_telemetry");
+    cJSON* rover_item = rover_telemetry->child;
 
     union {
-            float val;
-            unsigned char temp[4];
+        float val;
+        unsigned char temp[4];
     }u;
 
-    if (off_set == 0){
-        u.val = rover_time->valuedouble;
-        memcpy(data, u.temp, 4);
+    union {
+        bool val;
+        unsigned char temp[1];
+    }b;
+
+    for (int i = 0; i != off_set; i++){
+        rover_item = rover_item->next;
+    }
+
+    if(cJSON_IsBool(rover_item)){
+        printf("here\n");
+        b.val = cJSON_IsTrue(rover_item);
+        memcpy(data, b.temp, 4);
     }
     else{
-        for (int i = 1; i != off_set; i++){
-            rover_item = rover_item->next;
-        }
-
-        if (cJSON_IsBool(rover_item)){
-            union {
-                bool val;
-                unsigned char temp[4];
-            }u;
-
-            u.val = cJSON_IsTrue(rover_item);
-            memcpy(data, u.temp, 4);
-        }
-        else{
-            u.val = rover_item->valuedouble;
-            memcpy(data, u.temp, 4);
-        }
+        u.val = rover_item->valuedouble;
+        memcpy(data, u.temp, 4);
     }
 
     cJSON_Delete(json);
@@ -2231,8 +2261,10 @@ void simulate_backend(struct backend_data_t* backend){
             
         }
 
-    }
+        // Update Pressurized Rover Telemetry (ROVER_TELEMETRY.json)
+        build_json_rover_telemetry(&backend->p_rover, false);
 
+    }
 }
 
 // Access pr_data_t struct by index
@@ -2258,8 +2290,3 @@ size_t rover_index(int idx){
 
     return offsets[idx];
 }
-
-
-
-
-

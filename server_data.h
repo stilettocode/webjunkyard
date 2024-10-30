@@ -275,6 +275,7 @@ bool build_json_comm     (struct comm_data_t* comm);
 bool build_json_error    (struct eva_failures_t* error);
 bool build_json_eva      (struct eva_data_t* eva, int team_index, bool completed);
 bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed);
+bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed);
 
 // Update locally stored variables
 bool update_uia      (char* request_content, struct uia_data_t* uia);
@@ -304,7 +305,7 @@ bool udp_get_rover(unsigned int command, unsigned char* data);
 bool udp_get_comm(unsigned char* data);
 bool udp_get_teams(unsigned char* request_content);
 bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data);
-bool udp_get_rover_telemetry(unsigned int command, unsigned int team_number, unsigned char* data);
+bool udp_get_rover_telemetry(unsigned int command, unsigned char* data);
 bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* data);
 void handle_udp_get_request(unsigned int command, unsigned char* data);
 
