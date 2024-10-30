@@ -30,6 +30,7 @@ bool continue_server();
 bool big_endian();
 void get_contents();
 void reverse_bytes();
+void tss_to_unreal();
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                               Main Functions
@@ -51,7 +52,7 @@ int main(int argc, char* argv[])
 
     // ----------------- Begin Main Program Space -------------------------
 
-    bool udp_server = false;
+    bool udp_only = false;
 
     // Check for running in local host
     char hostname[16];
@@ -59,7 +60,7 @@ int main(int argc, char* argv[])
     if(argc > 1 && strcmp(argv[1], "--local") == 0){
         strcpy(hostname, "127.0.0.1");
         if (argc > 2 && strcmp(argv[2], "--udp") == 0){
-            udp_server = true;
+            udp_only = true;
         }
         
     } else {
@@ -72,7 +73,7 @@ int main(int argc, char* argv[])
     SOCKET udp_socket;
 
     // Create server sockets 
-    if(udp_server){
+    if(udp_only){
         udp_socket = create_udp_socket(hostname, port);
     }
     else{
@@ -91,7 +92,7 @@ int main(int argc, char* argv[])
     struct client_info_t* clients = NULL;
 
     // Start UDP-only server
-    while(udp_server){
+    while(udp_only){
 
         fd_set reads;
         reads = wait_on_clients(clients, server, udp_socket);
@@ -156,7 +157,7 @@ int main(int argc, char* argv[])
     }
     
     // Start HTTP and UDP server 
-    while(!udp_server){
+    while(!udp_only){
 
         fd_set reads;
         reads = wait_on_clients(clients, server, udp_socket);
@@ -228,6 +229,8 @@ int main(int argc, char* argv[])
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
+                tss_to_unreal(udp_socket, client->udp_addr, client->address_length, backend);
+
                 printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 drop_udp_client(&udp_clients, client);
@@ -238,7 +241,6 @@ int main(int argc, char* argv[])
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 handle_udp_post_request(command, data, backend);
-                
             }
         }
 
@@ -442,4 +444,53 @@ void reverse_bytes(unsigned char* bytes){
         bytes[i] = bytes[3 - i];
         bytes[3 - i] = temp;
     }
+}
+
+void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct backend_data_t* backend){
+
+    int breaks = backend->p_rover.breaks;
+    int lights_on = backend->p_rover.lights_on;
+    float steering = backend->p_rover.steering;
+    float throttle = backend->p_rover.throttle;
+
+    unsigned int time = backend->server_up_time;
+    unsigned int command = 1000;
+
+    unsigned char buffer[12];
+
+    memcpy(buffer, &time, 4);
+    memcpy(buffer + 4, &command, 4);
+    memcpy(buffer + 8, &breaks, 4);
+
+    if(!big_endian()){
+        reverse_bytes(buffer);
+        reverse_bytes(buffer + 4);
+        reverse_bytes(buffer + 8);
+    }
+
+    sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
+
+    memcpy(buffer + 8, &lights_on, 4);
+
+    if(!big_endian()){
+        reverse_bytes(buffer + 8);
+    }
+
+    sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
+
+    memcpy(buffer + 8, &steering, 4);
+
+    if(!big_endian()){
+        reverse_bytes(buffer + 8);
+    }
+
+    sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
+
+    memcpy(buffer + 8, &throttle, 4);
+
+    if(!big_endian()){
+        reverse_bytes(buffer + 8);
+    }
+
+    sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 }

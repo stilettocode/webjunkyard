@@ -381,7 +381,7 @@ bool udp_get_uia(unsigned int command, unsigned char* data){
     cJSON* uia_item = uia->child;
 
     union{
-        bool val;
+        int val;
         unsigned char temp[4];
     }u;
 
@@ -566,7 +566,7 @@ bool udp_get_dcu(unsigned int command, unsigned char* data){
     cJSON* eva2_item = eva2->child;
 
     union {
-        bool val;
+        int val;
         unsigned char temp[4];
     } u;
 
@@ -1113,7 +1113,7 @@ bool udp_get_comm(unsigned char* data){
     cJSON* comm_bool = comm->child;
 
     union{
-        bool comm;
+        int comm;
         unsigned char temp[4];
     } u;
 
@@ -1241,7 +1241,7 @@ bool udp_get_error(unsigned int command, unsigned char* data){
     cJSON* error_type = error->child;
 
     union {
-        bool val;
+        int val;
         unsigned char temp[4];
     } u;
 
@@ -1565,7 +1565,7 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "ac_heating", cJSON_CreateBool(rover->ac_heating));
     cJSON_AddItemToObject(pr_telemetry, "ac_cooling", cJSON_CreateBool(rover->ac_cooling));
     cJSON_AddItemToObject(pr_telemetry, "lights_on", cJSON_CreateBool(rover->lights_on));
-    cJSON_AddItemToObject(pr_telemetry, "breaks", cJSON_CreateBool(rover->in_sunlight));
+    cJSON_AddItemToObject(pr_telemetry, "breaks", cJSON_CreateBool(rover->breaks));
     cJSON_AddItemToObject(pr_telemetry, "in_sunlight", cJSON_CreateBool(rover->in_sunlight));
     cJSON_AddItemToObject(pr_telemetry, "throttle", cJSON_CreateNumber(rover->throttle));
     cJSON_AddItemToObject(pr_telemetry, "steering", cJSON_CreateNumber(rover->steering));
@@ -1982,8 +1982,8 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
     }u;
 
     union {
-        bool val;
-        unsigned char temp[1];
+        int val;
+        unsigned char temp[4];
     }b;
 
     for (int i = 0; i != off_set; i++){
@@ -1991,7 +1991,6 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
     }
 
     if(cJSON_IsBool(rover_item)){
-        printf("here\n");
         b.val = cJSON_IsTrue(rover_item);
         memcpy(data, b.temp, 4);
     }
