@@ -565,25 +565,22 @@ bool udp_get_dcu(unsigned int command, unsigned char* data){
     cJSON* eva1_item = eva1->child;
     cJSON* eva2_item = eva2->child;
 
-    union {
-        int val;
-        unsigned char temp[4];
-    } u;
+    int val = 0;
 
     if (off_set < 6){
         for (int i = 0; i != off_set; i++){
             eva1_item = eva1_item->next;
         }
-        u.val = eva1_item->valueint;
-        memcpy(data, u.temp, 4);
+        val = eva1_item->valueint;
+        memcpy(data, &val, 4);
     }
     else{
         off_set -= 6;
         for (int i = 0; i != off_set; i++){
             eva2_item = eva2_item->next;
         }
-        u.val = eva2_item->valueint;
-        memcpy(data, u.temp, 4);
+        val = eva2_item->valueint;
+        memcpy(data, &val, 4);
     }   
     
     cJSON_Delete(json);
@@ -829,16 +826,13 @@ bool udp_get_rover(unsigned int command, unsigned char* data){
     cJSON* rover = cJSON_GetObjectItemCaseSensitive(json, "rover");
     cJSON* rover_item = rover->child;
 
-    union{
-        float fl;
-        unsigned char temp[4];
-    } u;
+    float val = 0;
 
     for (int i = 0; i != off_set; i++){
         rover_item = rover_item->next;
     }
-    u.fl = rover_item->valuedouble;
-    memcpy(data, u.temp, 4);
+    val = rover_item->valuedouble;
+    memcpy(data, &val, 4);
 
     cJSON_Delete(json);
     return true;
@@ -976,50 +970,38 @@ bool udp_get_spec(unsigned int command, unsigned char* data){
     cJSON* eva2_id = eva2_name->next;
     cJSON* eva2_data_item = eva2_id->next->child;
     
+    float val = 0;
+
     if(off_set < 11){
         if(off_set == 0){
-            union{
-                unsigned int val;
-                unsigned char temp[4];
-            }u;
-            u.val = eva1_id->valueint;
-            memcpy(data, u.temp, 4);
+        
+            val = eva1_id->valueint;
+            memcpy(data, &val, 4);
         }
         else{
-            union{
-                float val;
-                unsigned char temp[4];
-            }u;
-
+            
             for(int i = 1; i != off_set; i++){
                 eva1_data_item = eva1_data_item->next;
             }
-            u.val = eva1_data_item->valuedouble;
+            val = eva1_data_item->valuedouble;
 
-            memcpy(data, u.temp, 4);
+            memcpy(data, &val, 4);
         }
     }
     else{
         off_set -= 11;
         if(off_set == 0){
-            union{
-                unsigned int val;
-                unsigned char temp[4];
-            }u;
-            u.val = eva2_id->valueint;
-            memcpy(data, u.temp, 4);
+        
+            val = eva2_id->valueint;
+            memcpy(data, &val, 4);
         }
         else{
-            union{
-                float val;
-                unsigned char temp[4];
-            }u;
 
             for(int i = 1; i != off_set; i++){
                 eva2_data_item = eva2_data_item->next;
             }
-            u.val = eva2_data_item->valuedouble;
-            memcpy(data, u.temp, 4);
+            val = eva2_data_item->valuedouble;
+            memcpy(data, &val, 4);
         }
     }
 
@@ -1116,9 +1098,8 @@ bool udp_get_comm(unsigned char* data){
         int comm;
         unsigned char temp[4];
     } u;
-
-    u.comm = cJSON_IsTrue(comm_bool);
-    memcpy(data, u.temp, 4);
+    int comm_val = cJSON_IsTrue(comm_bool);
+    memcpy(data, &comm_val, 4);
 
     cJSON_Delete(json);
     return true;
@@ -1240,17 +1221,14 @@ bool udp_get_error(unsigned int command, unsigned char* data){
     cJSON* error = cJSON_GetObjectItemCaseSensitive(json, "error");
     cJSON* error_type = error->child;
 
-    union {
-        int val;
-        unsigned char temp[4];
-    } u;
+    int val = 0;
 
     for (int i = 0; i != off_set; i++){
         error_type = error_type->next;
     }
 
-    u.val = cJSON_IsTrue(error_type);
-    memcpy(data, u.temp, 4);
+    val = cJSON_IsTrue(error_type);
+    memcpy(data, &val, 4);
 
     cJSON_Delete(json);
     return true;
@@ -1946,6 +1924,11 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
 bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
     int off_set = command - 103;
 
+    if(off_set > 15){
+        printf("Not yet implemented.\n");
+        return false;
+    }
+
     FILE* fp = fopen("public/json_data/ROVER_TELEMETRY.json", "r");
     if (fp == NULL) { 
         printf("Error: Unable to open the file.\n"); 
@@ -2163,6 +2146,11 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 1103;
+
+    if(off_set > 15){
+        printf("Not yet implemented.\n");
+        return false;
+    }
 
     char* p_rover = (char*)&(backend->p_rover);
 

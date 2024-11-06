@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     }
 
     #ifdef TESTING_MODE
-        printf("\nBig endian system: %s\n", big_endian() ? "yes" : "no");
+        printf("\nBig-endian system: %s\n", big_endian() ? "yes" : "no");
     #endif
 
     // "Data Base" Data
@@ -146,6 +146,8 @@ int main(int argc, char* argv[])
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 handle_udp_post_request(command, data, backend);
+                
+                drop_udp_client(&udp_clients, client);
             }
         }
 
@@ -203,11 +205,16 @@ int main(int argc, char* argv[])
 
             get_contents(client->request, &time, &command, data);
             
-            printf("time: %d, ", time);
-            printf("command: %d, ", command);
-            float value = 0;
-            memcpy(&value, data, 4);
-            printf("data: %f.\n", value);
+            #ifdef TESTING_MODE
+                printf("time: %d, ", time);
+                printf("command: %d, ", command);
+                float value = 0;
+                memcpy(&value, data, 4);
+                printf("data float: %f\n", value);
+                int valuei = 0;
+                memcpy(&valuei, data, 4);
+                printf("data int: %d\n", valuei);
+            #endif
 
             //check if it's a GET request
             if (command < 1000){
@@ -217,7 +224,7 @@ int main(int argc, char* argv[])
 
                 unsigned char response_buffer[12] = {0};
 
-                memcpy(response_buffer, &time, 4);
+                memcpy(response_buffer, &backend->server_up_time, 4);
                 memcpy(response_buffer + 4, &command, 4);
                 memcpy(response_buffer + 8, data, 4);
 
@@ -229,7 +236,7 @@ int main(int argc, char* argv[])
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
-                tss_to_unreal(udp_socket, client->udp_addr, client->address_length, backend);
+                //tss_to_unreal(udp_socket, client->udp_addr, client->address_length, backend);
 
                 printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
@@ -241,6 +248,8 @@ int main(int argc, char* argv[])
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 handle_udp_post_request(command, data, backend);
+
+                drop_udp_client(&udp_clients, client);
             }
         }
 
@@ -427,12 +436,12 @@ bool big_endian(){
     memcpy(temp, &i, 4);
 
     if(temp[0] == 1){
-        //System is big-endian
-        return true;
+        //System is little-endian
+        return false;
     }
     else{
-        //System is small-endian
-        return false;
+        //System is big-endian
+        return true;
     }
 }
 
