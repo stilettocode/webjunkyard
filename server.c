@@ -72,6 +72,10 @@ int main(int argc, char* argv[])
     SOCKET server;
     SOCKET udp_socket;
 
+    struct sockaddr_in unreal_addr;
+    socklen_t unreal_addr_len;
+    bool unreal = false;
+
     // Create server sockets 
     if(udp_only){
         udp_socket = create_udp_socket(hostname, port);
@@ -123,7 +127,7 @@ int main(int argc, char* argv[])
             #endif
 
             //check if it's a GET request
-            if (command <= 1000){
+            if (command < 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 handle_udp_get_request(command, data);
@@ -142,11 +146,24 @@ int main(int argc, char* argv[])
 
             }
             //check if it's a POST request
-            else{
+            else if (command < 2000){
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 handle_udp_post_request(command, data, backend);
                 
+                drop_udp_client(&udp_clients, client);
+            }
+
+            else if (command == 2000){
+                
+                unreal_addr = client->udp_addr;
+                unreal_addr_len = client->address_length;
+                unreal = true;
+
+                drop_udp_client(&udp_clients, client);
+            }
+
+            else {
                 drop_udp_client(&udp_clients, client);
             }
         }
@@ -244,13 +261,31 @@ int main(int argc, char* argv[])
 
             }
             //check if it's a POST request
-            else{
+            else if (command < 2000){
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 handle_udp_post_request(command, data, backend);
 
                 drop_udp_client(&udp_clients, client);
             }
+
+            else if (command == 2000){
+
+                unreal_addr = client->udp_addr;
+                unreal_addr_len = client->address_length;
+                unreal = true;
+
+                drop_udp_client(&udp_clients, client);
+            }
+
+            else {
+                drop_udp_client(&udp_clients, client);
+            }
+        }
+
+        // Send telemetry values to Unreal
+        if(unreal){
+            tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
         }
 
         // Server-Client Socket got a new message
@@ -446,7 +481,7 @@ bool big_endian(){
 }
 
 void reverse_bytes(unsigned char* bytes){
-    //expects 4 bytes to be flippled
+    //expects 4 bytes to be flipped
     char temp;
     for(int i = 0; i < 2; i++){
         temp = bytes[i];
@@ -463,7 +498,7 @@ void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct
     float throttle = backend->p_rover.throttle;
 
     unsigned int time = backend->server_up_time;
-    unsigned int command = 1000;
+    unsigned int command = 2001;
 
     unsigned char buffer[12];
 
