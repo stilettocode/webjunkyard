@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CAPCOM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./css/masterCSS.css">
+    <link rel="stylesheet" href="./css/pr_telemetry.css">
+    <link rel="icon" href="./images/android-chrome-512x512.png">
+    <script src="./javascript/pr_telemetry.js" ></script>
+    <script type="text/javascript" src="https://unpkg.com/jquery@3.3.1/dist/jquery.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/web3@0.20.5/dist/web3.min.js"></script>
+  </head>
+
+  <body onload="onload()">
+
+
+    <!------------------------------------------ Navigation Bar Section ------------------------------------------>
+    <nav>
+        <img class="logo" src="./images/android-chrome-512x512.png">
+        <span class="navBarTitle">
+            NASA S.U.I.T.S.
+        </span>
+        <span class="navBarSubTitle">
+            | CAPCOM |
+        </span>
+        <div class="navBarListContainer">
+            <ul class="navBarList">
+                <li>
+                    <a href="index.html" class="navBarListItem">Rooms</a>
+                </li>
+                <li>
+                    <a href="uia.html" class="navBarListItem">UIA</a>
+                </li>
+                <li>
+                    <a href="dcu.html" class="navBarListItem">DCU</a>
+                </li>
+                <li>
+                    <a href="rover.html" class="navBarListItem">Rover</a>
+                </li>
+                <li>
+                    <a href="spec.html" class="navBarListItem">Spec</a>
+                </li>
+                <li>
+                    <a href="telemetry.html" class="navBarListItem">Telemetry</a>
+                </li>
+                <li>
+                    <a href="pr_telemetry.html" class="navBarListItem">PR Telemetry</a>
+                </li>
+                <li>
+                    <a href="commTower.html" class="navBarListItem">Comm Tower</a>
+                </li>
+            </ul>
+        </div>
+        <img class="logo" src="./images/android-chrome-512x512.png">
+    </nav>
+
+
+    <!------------------------------------------ Main Page Body Section ------------------------------------------>
+    <div class="pageBody">
+
+
+        <!------------------------------------------ Room Specific Data Section ------------------------------------------>
+        <div class="roomDataContainer">
+            <div class="roomDataColumnContainer">
+                <div class="roomDataRowContainer">
+        
+
+                    <!------------------------------------------ Stations Section ------------------------------------------>
+                    <div class="roomDataColumn">        
+        
+
+                        <!------------------------------------------ UIA State Section ------------------------------------------>
+                        <div class="roomDataSubContainer">
+                            <div class="roomDataTitleContainer">
+                                <span class="roomDataTitle">
+                                    Pressurized Rover State
+                                </span>
+                            </div>
+                            <div class="roomDataSubTitleContainer">
+                                <span class="roomDataSubTitle">
+                                    Not Connected
+                                </span>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            AC Heating
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="ac_heating" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            AC Cooling
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="ac_cooling" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Lights on
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="lights_on" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Breaks
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="breaks" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            In sunlight
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="in_sunlight" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Throttle
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="throttle" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Steering
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="steering" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Current Pos X
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="current_pos_x" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Current Pos Y
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="current_pos_y" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Current Pos Altitude
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="current_pos_alt" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Heading
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="heading" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Pitch
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="pitch" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Roll
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="roll" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Distance traveled
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="distance_traveled" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Speed
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="speed" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Surface incline
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="surface_incline" class="prData">
+                                            ------
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+  </body>
+</html>

@@ -1,11 +1,11 @@
 {
 	"pr_telemetry":	{
-		"ac_heating":	false,
-		"ac_cooling":	false,
+		"ac_heating":	true,
+		"ac_cooling":	true,
 		"lights_on":	false,
 		"breaks":	false,
-		"in_sunlight":	false,
-		"throttle":	0,
+		"in_sunlight":	true,
+		"throttle":	122.12000274658203,
 		"steering":	0,
 		"current_pos_x":	0,
 		"current_pos_y":	0,
