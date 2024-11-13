@@ -84,64 +84,81 @@
                             </div>
                             <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="acHeatingSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="acHeatingSwitch" name="ac_heating" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="ac_heating" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             AC Heating
                                         </span>
                                     </div>
-                                    <div class="prDataContainer">
-                                        <span id="ac_heating" class="prData">
-                                            ------
-                                        </span>
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="acCoolingSensor" class="uiaStateSensor">
+                                        </div>
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             AC Cooling
                                         </span>
                                     </div>
-                                    <div class="prDataContainer">
-                                        <span id="ac_cooling" class="prData">
-                                            ------
-                                        </span>
-                                    </div>
                                 </div>
                             </div>
                             <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="lightsOnSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             Lights on
                                         </span>
                                     </div>
-                                    <div class="prDataContainer">
-                                        <span id="lights_on" class="prData">
-                                            ------
-                                        </span>
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="breaksSensor" class="uiaStateSensor">
+                                        </div>
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             Breaks
                                         </span>
                                     </div>
-                                    <div class="prDataContainer">
-                                        <span id="breaks" class="prData">
-                                            ------
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="inSunlightSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            In sunlight
+                                        </span>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="co2ScrubberSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            CO2 Scrubber
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
-                                    <div class="prNameContainer">
-                                        <span class="prData">
-                                            In sunlight
-                                        </span>
-                                    </div>
-                                    <div class="prDataContainer">
-                                        <span id="in_sunlight" class="prData">
-                                            ------
-                                        </span>
-                                    </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             Throttle

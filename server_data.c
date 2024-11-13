@@ -1557,6 +1557,27 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "speed", cJSON_CreateNumber(rover->speed));
     cJSON_AddItemToObject(pr_telemetry, "surface_incline", cJSON_CreateNumber(rover->surface_incline));
     cJSON_AddItemToObject(pr_telemetry, "lidar", cJSON_CreateArray());
+    cJSON_AddItemToObject(pr_telemetry, "oxygen_levels", cJSON_CreateNumber(rover->oxygen_levels));
+    cJSON_AddItemToObject(pr_telemetry, "ac_fan_pri", cJSON_CreateBool(rover->ac_fan_pri));
+    cJSON_AddItemToObject(pr_telemetry, "ac_fan_sec", cJSON_CreateBool(rover->ac_fan_sec));
+    cJSON_AddItemToObject(pr_telemetry, "cabin_pressure", cJSON_CreateNumber(rover->cabin_pressure));
+    cJSON_AddItemToObject(pr_telemetry, "cabin_temperature", cJSON_CreateNumber(rover->cabin_temperature));
+    cJSON_AddItemToObject(pr_telemetry, "battery_level", cJSON_CreateNumber(rover->battery_level));
+    cJSON_AddItemToObject(pr_telemetry, "power_consumption_rate", cJSON_CreateNumber(rover->power_consumption_rate));
+    cJSON_AddItemToObject(pr_telemetry, "solar_panel_efficiency", cJSON_CreateNumber(rover->solar_panel_efficiency));
+    cJSON_AddItemToObject(pr_telemetry, "internal_lights", cJSON_CreateBool(rover->internal_lights));
+    cJSON_AddItemToObject(pr_telemetry, "external_lights", cJSON_CreateBool(rover->external_lights));
+    cJSON_AddItemToObject(pr_telemetry, "external_temp", cJSON_CreateNumber(rover->external_temp));
+    cJSON_AddItemToObject(pr_telemetry, "pr_coolant_level", cJSON_CreateNumber(rover->pr_coolant_level));
+    cJSON_AddItemToObject(pr_telemetry, "pr_coolant_pressure", cJSON_CreateNumber(rover->pr_coolant_pressure));
+    cJSON_AddItemToObject(pr_telemetry, "pr_coolant_storage", cJSON_CreateNumber(rover->pr_coolant_storage));
+    cJSON_AddItemToObject(pr_telemetry, "motor_power_consumption", cJSON_CreateNumber(rover->motor_power_consumption));
+    cJSON_AddItemToObject(pr_telemetry, "terrain_condition", cJSON_CreateNumber(rover->terrain_condition));
+    cJSON_AddItemToObject(pr_telemetry, "solar_panel_dust_accum", cJSON_CreateNumber(rover->solar_panel_dust_accum));
+    cJSON_AddItemToObject(pr_telemetry, "mission_elapsed_time", cJSON_CreateNumber(rover->mission_elapsed_time));
+    cJSON_AddItemToObject(pr_telemetry, "mission_planned_time", cJSON_CreateNumber(rover->mission_planned_time));
+    cJSON_AddItemToObject(pr_telemetry, "point_of_no_return", cJSON_CreateNumber(rover->point_of_no_return));
+    cJSON_AddItemToObject(pr_telemetry, "distance_from_base", cJSON_CreateNumber(rover->distance_from_base));
 
     char* json_str = cJSON_Print(json);
 

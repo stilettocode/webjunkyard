@@ -163,18 +163,18 @@ struct telemetry_data_t {
 // Pressurized Rover Data
 struct pr_data_t {
 
-    //udapte rover_index() in server_data.c if order of variables is changed
+    //update rover_index() in server_data.c if order of variables is changed
     bool ac_heating;
     bool ac_cooling;
     bool lights_on;
-    bool breaks;        //drive commands
-    bool in_sunlight;   //from Unreal
 
     // Drive Commands
+    bool breaks;
     float throttle;
     float steering;
 
     // Data From Unreal
+    bool in_sunlight; 
     float current_pos_x;
     float current_pos_y;
     float current_pos_alt;
@@ -184,7 +184,40 @@ struct pr_data_t {
     float distance_traveled;
     float speed;
     float surface_incline;
-    float lidar[]; //not yet implemented
+    float lidar; //not yet implemented
+
+    // Life Support
+    float oxygen_levels;
+    bool ac_fan_pri;
+    bool ac_fan_sec;
+    float cabin_pressure;
+    float cabin_temperature;
+
+    // Power System
+    float battery_level;
+    float power_consumption_rate;
+    float solar_panel_efficiency;
+    bool internal_lights;
+    bool external_lights;
+
+    // Thermal System
+    float external_temp;
+    float pr_coolant_level;
+    float pr_coolant_pressure;
+    float pr_coolant_storage;
+
+    // Propulsion
+    float motor_power_consumption;
+
+    // Environmental
+    float terrain_condition;
+    float solar_panel_dust_accum;
+
+    // Mission Info
+    float mission_elapsed_time;
+    float mission_planned_time;
+    float point_of_no_return;
+    float distance_from_base;
 };
 
 struct eva_failures_t {
@@ -287,6 +320,7 @@ bool update_comm     (char* request_content, struct comm_data_t* comm);
 bool update_error    (char* request_content, struct eva_failures_t* error);
 bool update_eva      (char* request_content, struct backend_data_t* backend);
 bool update_telemetry(struct telemetry_data_t* telemetry, uint32_t eva_time, struct backend_data_t* backend, bool isEVA1);
+bool update_pr_telemetry(char* request_content, struct pr_data_t* prover);
 bool update_resource (char* request_content, struct backend_data_t* backend); // Entry Point to all other update functions
 
 // Simulate the backend

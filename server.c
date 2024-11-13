@@ -19,7 +19,7 @@
 // Server Variables
 
 // Uncomment this for extra print statements
-// #define VERBOSE_MODE 
+#define VERBOSE_MODE 
 #define TESTING_MODE
 
 ///////////////////////////////////////////////////////////////////////////////////
