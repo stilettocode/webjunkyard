@@ -163,7 +163,6 @@ struct telemetry_data_t {
 // Pressurized Rover Data
 struct pr_data_t {
 
-    //update rover_index() in server_data.c if order of variables is changed
     bool ac_heating;
     bool ac_cooling;
     bool lights_on;
@@ -188,6 +187,7 @@ struct pr_data_t {
 
     // Life Support
     float oxygen_levels;
+    bool co2_scrubber;
     bool ac_fan_pri;
     bool ac_fan_sec;
     float cabin_pressure;

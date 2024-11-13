@@ -91,9 +91,9 @@
                                     <div class="uiaStateSensorContainer">
                                         <form action="" method="post">
                                             <label class="switch">
-                                                <input type="checkbox" id="acHeatingSwitch" name="ac_heating" value="true" onChange="this.form.submit()">
+                                                <input type="checkbox" id="acHeatingSwitch" name="pr_ac_heating" value="true" onChange="this.form.submit()">
                                                 <span class="slider round"></span>
-                                                <input type='hidden' name="ac_heating" value="false">
+                                                <input type='hidden' name="pr_ac_heating" value="false">
                                             </label>
                                         </form>
                                     </div>
@@ -106,6 +106,15 @@
                                         <div id="acCoolingSensor" class="uiaStateSensor">
                                         </div>
                                     </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="acCoolingSwitch" name="pr_ac_cooling" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_ac_cooling" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             AC Cooling
@@ -116,21 +125,39 @@
                             <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
                                     <div class="uiaStateSensorContainer">
+                                        <div id="co2ScrubberSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="co2ScrubberSwitch" name="pr_co2_scrubber" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_co2_scrubber" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            CO2 Scrubber
+                                        </span>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
                                         <div id="lightsOnSensor" class="uiaStateSensor">
                                         </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="lightsOnSwitch" name="pr_lights_on" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_lights_on" value="false">
+                                            </label>
+                                        </form>
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             Lights on
-                                        </span>
-                                    </div>
-                                    <div class="uiaStateSensorContainer">
-                                        <div id="breaksSensor" class="uiaStateSensor">
-                                        </div>
-                                    </div>
-                                    <div class="prNameContainer">
-                                        <span class="prData">
-                                            Breaks
                                         </span>
                                     </div>
                                 </div>
@@ -138,21 +165,39 @@
                             <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
                                     <div class="uiaStateSensorContainer">
+                                        <div id="breaksSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="breaksSwitch" name="pr_breaks" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_breaks" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Breaks
+                                        </span>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
                                         <div id="inSunlightSensor" class="uiaStateSensor">
                                         </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="inSunlightSwitch" name="pr_in_sunlight" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_in_sunlight" value="false">
+                                            </label>
+                                        </form>
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             In sunlight
-                                        </span>
-                                    </div>
-                                    <div class="uiaStateSensorContainer">
-                                        <div id="co2ScrubberSensor" class="uiaStateSensor">
-                                        </div>
-                                    </div>
-                                    <div class="prNameContainer">
-                                        <span class="prData">
-                                            CO2 Scrubber
                                         </span>
                                     </div>
                                 </div>

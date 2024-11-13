@@ -62,12 +62,12 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
 
         udp_get_telemetry(command, team_number, data);
     }
-    else if(command < 136){
-        printf("Getting Rover_Telemetry.\n");
+    else if(command < 142){
+        printf("Getting Rover Telemetry.\n");
 
         udp_get_rover_telemetry(command, data);
     }
-    else if(command < 152){
+    else if(command < 158){
         printf("Getting EVA.\n");
         unsigned int team_number = 0;
         float fl;
@@ -88,8 +88,8 @@ void handle_udp_post_request(unsigned int command, unsigned char* data, struct b
     if(command < 1103){
         printf("Not yet implemented.\n");
     }
-    else if(command < 1136){
-        printf("Posting Telemetry.\n");
+    else if(command < 1121){
+        printf("Posting PR Telemetry.\n");
         udp_post_rover_telemetry(command, data, backend);
     }
     else{
@@ -1542,6 +1542,7 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
 
     cJSON_AddItemToObject(pr_telemetry, "ac_heating", cJSON_CreateBool(rover->ac_heating));
     cJSON_AddItemToObject(pr_telemetry, "ac_cooling", cJSON_CreateBool(rover->ac_cooling));
+    cJSON_AddItemToObject(pr_telemetry, "co2_scrubber", cJSON_CreateBool(rover->co2_scrubber));
     cJSON_AddItemToObject(pr_telemetry, "lights_on", cJSON_CreateBool(rover->lights_on));
     cJSON_AddItemToObject(pr_telemetry, "breaks", cJSON_CreateBool(rover->breaks));
     cJSON_AddItemToObject(pr_telemetry, "in_sunlight", cJSON_CreateBool(rover->in_sunlight));
@@ -1859,6 +1860,63 @@ bool update_telemetry(struct telemetry_data_t* telemetry, uint32_t eva_time, str
 
 }
 
+bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
+
+    bool* update_var = NULL;
+
+    if(strncmp(request_content, "ac_heating=", strlen("ac_heating=")) == 0){
+        update_var = &p_rover->ac_heating;
+        request_content += strlen("ac_heating=");
+        printf("PR AC HEATING: ");
+    }
+    else if(strncmp(request_content, "ac_cooling=", strlen("ac_cooling=")) == 0){
+        update_var = &p_rover->ac_cooling;
+        request_content += strlen("ac_cooling=");
+        printf("PR AC COOLING: ");
+    }
+    else if(strncmp(request_content, "lights_on=", strlen("lights_on=")) == 0){
+        update_var = &p_rover->lights_on;
+        request_content += strlen("lights_on=");
+        printf("PR LIGHTS: ");
+    }
+    else if(strncmp(request_content, "breaks=", strlen("breaks=")) == 0){
+        update_var = &p_rover->breaks;
+        request_content += strlen("breaks=");
+        printf("PR BREAKS: ");
+    }
+    else if(strncmp(request_content, "in_sunlight=", strlen("in_sunlight=")) == 0){
+        update_var = &p_rover->in_sunlight;
+        request_content += strlen("in_sunlight=");
+        printf("PR IN SUNLIGHT: ");
+    }
+    else if(strncmp(request_content, "co2_scrubber=", strlen("co2_scrubber=")) == 0){
+        update_var = &p_rover->co2_scrubber;
+        request_content += strlen("co2_scrubber=");
+        printf("PR CO2 SCRUBBER: ");
+    }
+    else{
+        return false;
+    }
+
+    if(update_var){
+        if(strncmp(request_content, "true", strlen("true")) == 0){
+            *update_var = true;
+            printf("ON\n");
+        }
+        else if(strncmp(request_content, "false", strlen("false")) == 0){
+            *update_var = false;
+            printf("OFF\n");
+        }
+        else{
+            return false;
+        }
+
+        build_json_rover_telemetry(p_rover, false);
+    }
+
+    return true;
+}
+
 bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data){
 
     int off_set = command - 58;
@@ -1945,7 +2003,7 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
 bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
     int off_set = command - 103;
 
-    if(off_set > 15){
+    if(off_set > 39){
         printf("Not yet implemented.\n");
         return false;
     }
@@ -2008,7 +2066,7 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
 }
 
 bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* data){
-    int off_set = command - 136;
+    int off_set = command - 142;
 
     char start_path[50] = "public/json_data/teams/";
     char team[3] = "";
@@ -2168,7 +2226,7 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 1103;
 
-    if(off_set > 15){
+    if(off_set > 16){
         printf("Not yet implemented.\n");
         return false;
     }
@@ -2177,7 +2235,7 @@ bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct 
 
     p_rover += rover_index(off_set);
 
-    if (off_set < 5){
+    if (off_set < 6){
         bool val;
         memcpy(&val, data, 1);
 
@@ -2222,6 +2280,9 @@ bool update_resource(char* request_content, struct backend_data_t* backend){
     } else if(strncmp(request_content, "error_", 6) == 0){
         request_content += 6;
         return update_error(request_content, &backend->failures);
+    } else if(strncmp(request_content, "pr_", strlen("pr_")) == 0){
+        request_content += strlen("pr_");
+        return update_pr_telemetry(request_content, &backend->p_rover);
     }
 
     return false;
@@ -2280,6 +2341,7 @@ size_t rover_index(int idx){
     size_t offsets[] = {
         offsetof(struct pr_data_t, ac_heating),
         offsetof(struct pr_data_t, ac_cooling),
+        offsetof(struct pr_data_t, co2_scrubber),
         offsetof(struct pr_data_t, lights_on),
         offsetof(struct pr_data_t, breaks),
         offsetof(struct pr_data_t, in_sunlight),
