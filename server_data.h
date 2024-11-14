@@ -43,6 +43,9 @@
 #define SUIT_COOLANT_NOMINAL_TEMP 65.0f
 #define SUIT_COOLANT_NOMINAL_PRESSURE 500.0f
 
+// Pressurized Rover Values
+#define MAX_LIDAR_SIZE 2000
+
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
 ///////////////////////////////////////////////////////////////////////////////////
@@ -183,7 +186,7 @@ struct pr_data_t {
     float distance_traveled;
     float speed;
     float surface_incline;
-    float lidar; //not yet implemented
+    float lidar[MAX_LIDAR_SIZE]; //not yet implemented
 
     // Life Support
     float oxygen_levels;
@@ -327,6 +330,7 @@ bool update_resource (char* request_content, struct backend_data_t* backend); //
 float fourier_sin(float x);
 float randomized_sine_value(float x, float avg, float amp, float phase, float freq);
 void simulate_telemetry(struct telemetry_data_t telemetry);
+void simulate_pr_telemetry(struct pr_data_t p_rover);
 void simulate_backend  (struct backend_data_t* backend);
 
 // UDP GET functions
@@ -345,6 +349,7 @@ void handle_udp_get_request(unsigned int command, unsigned char* data);
 
 // UDP POST functions
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend);
-void handle_udp_post_request(unsigned int command, unsigned char* data, struct backend_data_t* backend);
+bool udp_post_rover_lidar(char* request, struct backend_data_t* backend);
+void handle_udp_post_request(unsigned int command, char* data, char* request, struct backend_data_t* backend);
 
 #endif

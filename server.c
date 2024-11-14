@@ -136,7 +136,6 @@ int main(int argc, char* argv[])
     #ifdef TESTING_MODE
         printf("\nBig-endian system: %s\n", big_endian() ? "yes" : "no");
         printf("Protected mode: %s\n", protected_mode ? "ON" : "OFF");
-        printf("size: %d\n", whitelist_size);
     #endif
 
     // "Data Base" Data
@@ -199,7 +198,7 @@ int main(int argc, char* argv[])
             else if (command < 2000){
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                handle_udp_post_request(command, data, backend);
+                handle_udp_post_request(command, data, client->request, backend);
                 
                 drop_udp_client(&udp_clients, client);
             }
@@ -278,7 +277,7 @@ int main(int argc, char* argv[])
                 float value = 0;
                 memcpy(&value, data, 4);
                 printf("data float: %f\n", value);
-                int valuei = 0;
+                int valuei = 0;   
                 memcpy(&valuei, data, 4);
                 printf("data int: %d\n", valuei);
             #endif
@@ -312,7 +311,7 @@ int main(int argc, char* argv[])
             else if (command < 2000){
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                handle_udp_post_request(command, data, backend);
+                handle_udp_post_request(command, data, client->request, backend);
 
                 drop_udp_client(&udp_clients, client);
             }

@@ -83,14 +83,21 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
 
 }
 
-void handle_udp_post_request(unsigned int command, unsigned char* data, struct backend_data_t* backend){
+void handle_udp_post_request(unsigned int command, char* data, char* request, struct backend_data_t* backend){
 
     if(command < 1103){
         printf("Not yet implemented.\n");
     }
     else if(command < 1121){
-        printf("Posting PR Telemetry.\n");
-        udp_post_rover_telemetry(command, data, backend);
+
+        if(command == 1120){
+            printf("Posting PR Lidar,\n");
+            udp_post_rover_lidar(request, backend);
+        }
+        else{
+            printf("Posting PR Telemetry.\n");
+            udp_post_rover_telemetry(command, data, backend);
+        }
     }
     else{
         printf("Request not found.\n");
@@ -2227,7 +2234,7 @@ bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct 
     int off_set = command - 1103;
 
     if(off_set > 16){
-        printf("Not yet implemented.\n");
+        printf("Command not valid.\n");
         return false;
     }
 
@@ -2249,6 +2256,14 @@ bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct 
     }
 
     return true;
+}
+
+bool udp_post_rover_lidar(char* request, struct backend_data_t* backend){
+    char* lidar = request + 8;
+
+    for(int i = 0; i < MAX_LIDAR_SIZE; i++){
+        memcpy(&backend->p_rover.lidar[i], lidar + 4*i, 4);
+    }
 }
 
 // -------------------------- Update --------------------------------
