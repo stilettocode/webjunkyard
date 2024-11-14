@@ -1,9 +1,9 @@
 {
 	"pr_telemetry":	{
-		"ac_heating":	true,
-		"ac_cooling":	true,
+		"ac_heating":	false,
+		"ac_cooling":	false,
 		"co2_scrubber":	false,
-		"lights_on":	true,
+		"lights_on":	false,
 		"breaks":	false,
 		"in_sunlight":	false,
 		"throttle":	0,

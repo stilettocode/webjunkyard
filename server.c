@@ -17,10 +17,11 @@
 #include "server_data.h"
 
 // Server Variables
+#define MAX_LINE_LENGHT 1024
 
 // Uncomment this for extra print statements
 //#define VERBOSE_MODE 
-#define TESTING_MODE
+//#define TESTING_MODE
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                      Helper Functions Declarations
@@ -53,6 +54,7 @@ int main(int argc, char* argv[])
     // ----------------- Begin Main Program Space -------------------------
 
     bool udp_only = false;
+    bool protected_mode = false;
 
     // Check for running in local host
     char hostname[16];
@@ -62,9 +64,55 @@ int main(int argc, char* argv[])
         if (argc > 2 && strcmp(argv[2], "--udp") == 0){
             udp_only = true;
         }
-        
+
     } else {
         get_ip_address(hostname);
+    }
+
+    for (int i = 0; i < argc; i++){
+        if (strcmp(argv[i], "--auth") == 0){
+            protected_mode = true;
+            break;
+        }
+    }
+
+    char* whitelist[MAX_LINE_LENGHT];
+    int whitelist_size = 0;
+
+    // Load Whitelist
+    if(protected_mode){
+        FILE* fp = fopen("whitelist.csv", "r");
+        if (fp == NULL){
+            printf("Error opening whitelist file.\n");
+        }
+        
+        char line[MAX_LINE_LENGHT];
+
+        int idx = 0;
+        while(fgets(line, sizeof(line), fp)){
+            line[strcspn(line, "\n")] = '\0';
+            
+            char* value = strtok(line, ",");
+
+            while(value){
+                whitelist[idx] = value;
+                idx++;
+                value = strtok(NULL, ",");
+            }
+        }
+        whitelist_size = idx;
+
+        #ifdef TESTING_MODE
+            printf("Whitelist: ");
+            for (int i = 0; i < whitelist_size; i++){
+                if(i == whitelist_size - 1){
+                    printf("%s\n\n", whitelist[i]);
+                }
+                else{
+                    printf("%s, " , whitelist[i]);
+                }
+            }
+        #endif
     }
 
     printf("Launching Server at IP: %s:%s\n", hostname, port);
@@ -87,6 +135,8 @@ int main(int argc, char* argv[])
 
     #ifdef TESTING_MODE
         printf("\nBig-endian system: %s\n", big_endian() ? "yes" : "no");
+        printf("Protected mode: %s\n", protected_mode ? "ON" : "OFF");
+        printf("size: %d\n", whitelist_size);
     #endif
 
     // "Data Base" Data
@@ -253,8 +303,6 @@ int main(int argc, char* argv[])
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
-                //tss_to_unreal(udp_socket, client->udp_addr, client->address_length, backend);
-
                 printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 drop_udp_client(&udp_clients, client);
@@ -290,6 +338,23 @@ int main(int argc, char* argv[])
 
         // Server-Client Socket got a new message
         struct client_info_t* client = clients;
+
+        //Check if client is on the whitelist
+        if(protected_mode && client){
+            bool found = false;
+
+            for (int i = 0; i < whitelist_size; i++){
+                if(strcmp(whitelist[i], get_client_address(client)) == 0){
+                    found = true;
+                }
+            }
+
+            if(!found){
+                drop_client(&clients, client);
+                printf("Client not in whitelist\n");
+            }
+        }
+
         while(client){
             
             struct client_info_t* next_client = client->next;
