@@ -316,7 +316,7 @@ int main(int argc, char* argv[])
                 drop_udp_client(&udp_clients, client);
             }
 
-            else if (command == 2000){
+            else if (command == 3000){
 
                 unreal_addr = client->udp_addr;
                 unreal_addr_len = client->address_length;
@@ -562,7 +562,10 @@ void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct
     float throttle = backend->p_rover.throttle;
 
     unsigned int time = backend->server_up_time;
-    unsigned int command = 2001;
+    unsigned int command = 2000;
+    unsigned int command2 = 2001;
+    unsigned int command3 = 2002;
+    unsigned int command4 = 2003;
 
     unsigned char buffer[12];
 
@@ -578,25 +581,31 @@ void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct
 
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 
+    memcpy(buffer + 4, &command2, 4);
     memcpy(buffer + 8, &lights_on, 4);
 
     if(!big_endian()){
+        reverse_bytes(buffer + 4);
         reverse_bytes(buffer + 8);
     }
 
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 
+    memcpy(buffer + 4, &command3, 4);
     memcpy(buffer + 8, &steering, 4);
 
     if(!big_endian()){
+        reverse_bytes(buffer + 4);
         reverse_bytes(buffer + 8);
     }
 
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 
+    memcpy(buffer + 4, &command4, 4);
     memcpy(buffer + 8, &throttle, 4);
 
     if(!big_endian()){
+        reverse_bytes(buffer + 4);
         reverse_bytes(buffer + 8);
     }
 

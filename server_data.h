@@ -43,8 +43,22 @@
 #define SUIT_COOLANT_NOMINAL_TEMP 65.0f
 #define SUIT_COOLANT_NOMINAL_PRESSURE 500.0f
 
-// Pressurized Rover Values
+// Pressurized Rover Values (Consumption rates are in battery percentage per second consumed)
 #define MAX_LIDAR_SIZE 2000
+
+#define THROTTLE_CONSUMPTION_RATE 0.1f
+#define THROTTLE_MAX_ABS_VALUE 100.0f
+
+#define MAX_SOLAR_PANEL_DUST_ACCUM 100.0f;
+#define SOLAR_PANEL_RECHARGE_RATE 0.1f;
+
+#define EXTERNAL_LIGHTS_CONSUMPTION_RATE 0.01f;
+#define INTERNAL_LIGHTS_CONSUMPTION_RATE 0.005f;
+
+#define CO2_SCRUBBER_CONSUMPTION_RATE 0.01f;
+
+#define AC_COOLING_CONSUMPTION_RATE 0.05f;
+#define AC_HEATING_CONSUMPTION_RATE 0.01f;
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
@@ -324,13 +338,13 @@ bool update_error    (char* request_content, struct eva_failures_t* error);
 bool update_eva      (char* request_content, struct backend_data_t* backend);
 bool update_telemetry(struct telemetry_data_t* telemetry, uint32_t eva_time, struct backend_data_t* backend, bool isEVA1);
 bool update_pr_telemetry(char* request_content, struct pr_data_t* prover);
-bool update_resource (char* request_content, struct backend_data_t* backend); // Entry Point to all other update functions
+bool update_resource(char* request_content, struct backend_data_t* backend); // Entry Point to all other update functions
 
 // Simulate the backend
 float fourier_sin(float x);
 float randomized_sine_value(float x, float avg, float amp, float phase, float freq);
 void simulate_telemetry(struct telemetry_data_t telemetry);
-void simulate_pr_telemetry(struct pr_data_t p_rover);
+void simulate_pr_telemetry(struct pr_data_t* p_rover);
 void simulate_backend  (struct backend_data_t* backend);
 
 // UDP GET functions

@@ -197,6 +197,8 @@ struct backend_data_t* init_backend(){
         build_json_telemetry(&backend->evas[i], i, false);
     }
 
+    backend->p_rover.battery_level = 100;
+
     return backend;
 }
 
@@ -1924,6 +1926,51 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
     return true;
 }
 
+void simulate_pr_telemetry(struct pr_data_t* p_rover){
+
+    // In Sunlight
+    if(p_rover->in_sunlight){
+        p_rover->solar_panel_efficiency = 1 - p_rover->solar_panel_dust_accum/MAX_SOLAR_PANEL_DUST_ACCUM;
+    }
+    else{
+        p_rover->solar_panel_efficiency = 0;
+    }
+
+    // Internal/External Lights
+    if(p_rover->lights_on){
+        p_rover->internal_lights = true;
+        p_rover->external_lights = true;
+    }
+    else{
+        p_rover->internal_lights = false;
+        p_rover->external_lights = false;
+    }
+    float total_light_consumption = p_rover->internal_lights * INTERNAL_LIGHTS_CONSUMPTION_RATE + p_rover->external_lights * EXTERNAL_LIGHTS_CONSUMPTION_RATE;
+
+    // CO2 Scrubber
+    float co2_scrubber_rate = p_rover->co2_scrubber * CO2_SCRUBBER_CONSUMPTION_RATE;
+
+    // AC Cooling/Heating
+    float total_ac_rate = p_rover->ac_cooling * AC_COOLING_CONSUMPTION_RATE + p_rover->ac_heating *AC_HEATING_CONSUMPTION_RATE;
+
+    // Throttle
+    float throttle = p_rover->throttle/THROTTLE_MAX_ABS_VALUE;
+    if (throttle < 0){
+        throttle *= -1;
+    }
+    p_rover->motor_power_consumption = throttle * THROTTLE_CONSUMPTION_RATE;
+
+    p_rover->power_consumption_rate = p_rover->motor_power_consumption + total_ac_rate 
+        + total_light_consumption + co2_scrubber_rate - p_rover->solar_panel_efficiency * SOLAR_PANEL_RECHARGE_RATE;
+
+    p_rover->battery_level -= p_rover->power_consumption_rate;
+
+    if(p_rover->battery_level > 100){
+        p_rover->battery_level = 100;
+    }
+    printf("Battery: %.2f\n", p_rover->battery_level);
+}
+
 bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data){
 
     int off_set = command - 58;
@@ -2345,6 +2392,7 @@ void simulate_backend(struct backend_data_t* backend){
             
         }
 
+        simulate_pr_telemetry(&backend->p_rover);
         // Update Pressurized Rover Telemetry (ROVER_TELEMETRY.json)
         build_json_rover_telemetry(&backend->p_rover, false);
 
