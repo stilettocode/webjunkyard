@@ -335,6 +335,29 @@ int main(int argc, char* argv[])
             tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
         }
 
+        // Tell Unreal to send new destination
+        if(backend->p_rover.switch_dest && unreal){
+            
+            backend->p_rover.switch_dest = false;
+            
+            char buffer[12] = {0};
+            unsigned int command = 2004;
+            bool switch_dest = true;
+            
+            memcpy(buffer, &backend->server_up_time, 4);
+            memcpy(buffer + 4, &command, 4);
+            memcpy(buffer + 8, &switch_dest, 4);
+
+            if(!big_endian()){
+                reverse_bytes(buffer);
+                reverse_bytes(buffer + 4);
+                reverse_bytes(buffer + 8);
+            }
+
+            sendto(udp_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&unreal_addr, unreal_addr_len);
+            printf("Sent request to unreal to switch destination.\n");
+        }
+
         // Server-Client Socket got a new message
         struct client_info_t* client = clients;
 

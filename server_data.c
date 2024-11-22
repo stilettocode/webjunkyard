@@ -198,6 +198,7 @@ struct backend_data_t* init_backend(){
     }
 
     backend->p_rover.battery_level = 100;
+    backend->p_rover.switch_dest = false;
 
     return backend;
 }
@@ -1588,6 +1589,11 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "mission_planned_time", cJSON_CreateNumber(rover->mission_planned_time));
     cJSON_AddItemToObject(pr_telemetry, "point_of_no_return", cJSON_CreateNumber(rover->point_of_no_return));
     cJSON_AddItemToObject(pr_telemetry, "distance_from_base", cJSON_CreateNumber(rover->distance_from_base));
+    cJSON_AddItemToObject(pr_telemetry, "switch_dest", cJSON_CreateBool(rover->switch_dest));
+    cJSON_AddItemToObject(pr_telemetry, "dest_x", cJSON_CreateNumber(rover->dest_x));
+    cJSON_AddItemToObject(pr_telemetry, "dest_y", cJSON_CreateNumber(rover->dest_y));
+    cJSON_AddItemToObject(pr_telemetry, "dest_z", cJSON_CreateNumber(rover->dest_z));
+
 
     char* json_str = cJSON_Print(json);
 
@@ -1945,13 +1951,17 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover){
         p_rover->internal_lights = false;
         p_rover->external_lights = false;
     }
-    float total_light_consumption = p_rover->internal_lights * INTERNAL_LIGHTS_CONSUMPTION_RATE + p_rover->external_lights * EXTERNAL_LIGHTS_CONSUMPTION_RATE;
+    float internal_light_rate = p_rover->internal_lights * INTERNAL_LIGHTS_CONSUMPTION_RATE;
+    float external_light_rate = p_rover->external_lights * EXTERNAL_LIGHTS_CONSUMPTION_RATE;
+    float total_light_consumption = internal_light_rate + external_light_rate;
 
     // CO2 Scrubber
     float co2_scrubber_rate = p_rover->co2_scrubber * CO2_SCRUBBER_CONSUMPTION_RATE;
 
     // AC Cooling/Heating
-    float total_ac_rate = p_rover->ac_cooling * AC_COOLING_CONSUMPTION_RATE + p_rover->ac_heating *AC_HEATING_CONSUMPTION_RATE;
+    float ac_cooling_rate = p_rover->ac_cooling * AC_COOLING_CONSUMPTION_RATE;
+    float ac_heating_rate = p_rover->ac_heating * AC_HEATING_CONSUMPTION_RATE;
+    float total_ac_rate = ac_cooling_rate + ac_heating_rate;
 
     // Throttle
     float throttle = p_rover->throttle/THROTTLE_MAX_ABS_VALUE;
@@ -2280,7 +2290,7 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 1103;
 
-    if(off_set > 16){
+    if(off_set > 19){
         printf("Command not valid.\n");
         return false;
     }
@@ -2418,7 +2428,10 @@ size_t rover_index(int idx){
         offsetof(struct pr_data_t, roll),
         offsetof(struct pr_data_t, distance_traveled),
         offsetof(struct pr_data_t, speed),
-        offsetof(struct pr_data_t, surface_incline)
+        offsetof(struct pr_data_t, surface_incline),
+        offsetof(struct pr_data_t, dest_x),
+        offsetof(struct pr_data_t, dest_y),
+        offsetof(struct pr_data_t, dest_z)
     };
 
     return offsets[idx];

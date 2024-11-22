@@ -58,7 +58,7 @@
 #define CO2_SCRUBBER_CONSUMPTION_RATE 0.01f;
 
 #define AC_COOLING_CONSUMPTION_RATE 0.05f;
-#define AC_HEATING_CONSUMPTION_RATE 0.01f;
+#define AC_HEATING_CONSUMPTION_RATE 0.05f;
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
@@ -235,6 +235,12 @@ struct pr_data_t {
     float mission_planned_time;
     float point_of_no_return;
     float distance_from_base;
+
+    // Destination
+    bool switch_dest;
+    float dest_x;
+    float dest_y;
+    float dest_z;
 };
 
 struct eva_failures_t {
