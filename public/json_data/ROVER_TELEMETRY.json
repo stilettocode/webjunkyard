@@ -40,7 +40,7 @@
 		"point_of_no_return":	0,
 		"distance_from_base":	0,
 		"switch_dest":	false,
-		"dest_x":	0,
+		"dest_x":	555.5,
 		"dest_y":	0,
 		"dest_z":	0
 	}

@@ -88,9 +88,9 @@ void handle_udp_post_request(unsigned int command, char* data, char* request, st
     if(command < 1103){
         printf("Not yet implemented.\n");
     }
-    else if(command < 1121){
+    else if(command < 1131){
 
-        if(command == 1120){
+        if(command == 1130){
             printf("Posting PR Lidar,\n");
             udp_post_rover_lidar(request, backend);
         }
@@ -1978,7 +1978,7 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover){
     if(p_rover->battery_level > 100){
         p_rover->battery_level = 100;
     }
-    printf("Battery: %.2f\n", p_rover->battery_level);
+    //printf("Battery: %.2f\n", p_rover->battery_level);
 }
 
 bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data){
@@ -2290,7 +2290,7 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 1103;
 
-    if(off_set > 19){
+    if(off_set > 20){
         printf("Command not valid.\n");
         return false;
     }
@@ -2429,6 +2429,7 @@ size_t rover_index(int idx){
         offsetof(struct pr_data_t, distance_traveled),
         offsetof(struct pr_data_t, speed),
         offsetof(struct pr_data_t, surface_incline),
+        offsetof(struct pr_data_t, switch_dest),
         offsetof(struct pr_data_t, dest_x),
         offsetof(struct pr_data_t, dest_y),
         offsetof(struct pr_data_t, dest_z)
