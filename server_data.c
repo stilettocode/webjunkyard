@@ -2290,7 +2290,7 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 1103;
 
-    if(off_set > 20){
+    if(off_set > 21){
         printf("Command not valid.\n");
         return false;
     }
