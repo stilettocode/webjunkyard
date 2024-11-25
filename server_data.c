@@ -198,7 +198,9 @@ struct backend_data_t* init_backend(){
     }
 
     backend->p_rover.battery_level = 100;
-    backend->p_rover.switch_dest = false;
+    backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
+    backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
+    backend->pr_sim.object_temp = NOMINAL_CABIN_TEMPERATURE;
 
     return backend;
 }
@@ -1932,7 +1934,7 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
     return true;
 }
 
-void simulate_pr_telemetry(struct pr_data_t* p_rover){
+void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, struct backend_data_t* backend){
 
     // In Sunlight
     if(p_rover->in_sunlight){
@@ -1970,15 +1972,90 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover){
     }
     p_rover->motor_power_consumption = throttle * THROTTLE_CONSUMPTION_RATE;
 
+    //Battery consumption
     p_rover->power_consumption_rate = p_rover->motor_power_consumption + total_ac_rate 
         + total_light_consumption + co2_scrubber_rate - p_rover->solar_panel_efficiency * SOLAR_PANEL_RECHARGE_RATE;
-
     p_rover->battery_level -= p_rover->power_consumption_rate;
 
     if(p_rover->battery_level > 100){
         p_rover->battery_level = 100;
     }
+    else if(p_rover->battery_level < 0){
+        p_rover->battery_level = 0;
+    }
+
+
+    simulate_cabin_temperature(backend);
+    /*
+    //Cabin temperature IN-PROGRESS
+    float nominal_cabin_temp = NOMINAL_CABIN_TEMPERATURE;
+
+    if(p_rover->in_sunlight && !p_rover->ac_cooling){
+        p_rover->cabin_temperature += CABIN_TEMPERATURE_HEATING_RATE;
+    }
+    else if(!p_rover->in_sunlight && !p_rover->ac_heating){
+        p_rover->cabin_temperature -= CABIN_TEMPERATURE_COOLING_RATE;
+    }
+    else{
+        p_rover->cabin_temperature = randomized_sine_value(server_time, nominal_cabin_temp, 2.0f, 350.0f, 1.5f);
+    }
+    */
+
     //printf("Battery: %.2f\n", p_rover->battery_level);
+}
+
+void simulate_cabin_temperature(struct backend_data_t* backend){
+
+    struct pr_data_t* p_rover = &backend->p_rover;
+    struct pr_sim_data_t* cabin_sim = &backend->pr_sim;
+    uint32_t server_time = backend->server_up_time;
+
+    float new_target_temp;
+
+    float k = -0.01;
+    if(p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
+        new_target_temp = MOON_HIGH_TEMPERATURE/2;
+    }
+    else if(p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
+        new_target_temp = MOON_HIGH_TEMPERATURE/2;
+    }
+    else if(p_rover->in_sunlight && !p_rover->ac_cooling && p_rover->ac_heating){
+        new_target_temp = MOON_HIGH_TEMPERATURE/2;
+        k *= 2;
+    }
+    else if(!p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
+        new_target_temp = MOON_LOW_TEMPERATURE/2;
+    }
+    else if(!p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
+        new_target_temp = MOON_LOW_TEMPERATURE/2;
+    }
+    else if(!p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
+        new_target_temp = MOON_LOW_TEMPERATURE/2;
+        k *= 2;
+    }
+    else if(p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
+        new_target_temp = NOMINAL_CABIN_TEMPERATURE;
+        k *= 4;
+    }
+    else if(!p_rover->in_sunlight && !p_rover->ac_cooling && p_rover->ac_heating){
+        new_target_temp = NOMINAL_CABIN_TEMPERATURE;
+        k *= 4;
+    }
+    
+    if (cabin_sim->target_temp != new_target_temp){
+        cabin_sim->start_time = server_time;
+        cabin_sim->object_temp = p_rover->cabin_temperature;
+        cabin_sim->target_temp = new_target_temp;
+    }
+
+    p_rover->cabin_temperature = cabin_sim->target_temp + ((cabin_sim->object_temp - cabin_sim->target_temp) * (pow(E, k*(server_time - cabin_sim->start_time))));
+
+    /*
+    printf("target_temp: %f\n", cabin_sim->target_temp);
+    printf("start_time: %d\n", cabin_sim->start_time);
+    printf("server_time: %d\n", backend->server_up_time);
+    */
+
 }
 
 bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data){
@@ -2301,7 +2378,7 @@ bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct 
 
     if (off_set < 6){
         bool val;
-        memcpy(&val, data, 1);
+        val = data[0] | data[3];
 
         *(bool*)p_rover = val;
     }
@@ -2402,7 +2479,8 @@ void simulate_backend(struct backend_data_t* backend){
             
         }
 
-        simulate_pr_telemetry(&backend->p_rover);
+        simulate_pr_telemetry(&backend->p_rover, backend->server_up_time, backend);
+
         // Update Pressurized Rover Telemetry (ROVER_TELEMETRY.json)
         build_json_rover_telemetry(&backend->p_rover, false);
 

@@ -43,7 +43,7 @@
 #define SUIT_COOLANT_NOMINAL_TEMP 65.0f
 #define SUIT_COOLANT_NOMINAL_PRESSURE 500.0f
 
-// Pressurized Rover Values (Consumption rates are in battery percentage per second consumed)
+// Pressurized Rover Values (Power consumption rates are in battery percentage per second consumed)
 #define MAX_LIDAR_SIZE 2000
 
 #define THROTTLE_CONSUMPTION_RATE 0.1f
@@ -59,6 +59,15 @@
 
 #define AC_COOLING_CONSUMPTION_RATE 0.05f;
 #define AC_HEATING_CONSUMPTION_RATE 0.05f;
+
+#define E 2.718281828f
+#define MOON_HIGH_TEMPERATURE 121
+#define MOON_LOW_TEMPERATURE -133
+
+#define NOMINAL_CABIN_TEMPERATURE 22.0f;
+#define NOMINAL_CABIN_PRESSURE 1.0f;
+#define CABIN_TEMPERATURE_HEATING_RATE 2.0f;
+#define CABIN_TEMPERATURE_COOLING_RATE 2.0f;
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
@@ -243,6 +252,14 @@ struct pr_data_t {
     float dest_z;
 };
 
+struct pr_sim_data_t {
+
+    float target_temp;
+    float object_temp;
+    uint32_t start_time;
+
+};
+
 struct eva_failures_t {
     
     bool oxy_error;
@@ -308,6 +325,7 @@ struct backend_data_t {
 
     // Simulated Data
     struct eva_failures_t   failures;
+    struct pr_sim_data_t    pr_sim;
 
 };
 
@@ -350,7 +368,8 @@ bool update_resource(char* request_content, struct backend_data_t* backend); // 
 float fourier_sin(float x);
 float randomized_sine_value(float x, float avg, float amp, float phase, float freq);
 void simulate_telemetry(struct telemetry_data_t telemetry);
-void simulate_pr_telemetry(struct pr_data_t* p_rover);
+void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, struct backend_data_t* backend);
+void simulate_cabin_temperature(struct backend_data_t* backend);
 void simulate_backend  (struct backend_data_t* backend);
 
 // UDP GET functions
