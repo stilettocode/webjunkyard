@@ -2394,8 +2394,9 @@ bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct 
 
 bool udp_post_rover_lidar(char* request, struct backend_data_t* backend){
     char* lidar = request + 8;
+    int arrSize = sizeof(request) - 8;
 
-    for(int i = 0; i < MAX_LIDAR_SIZE; i++){
+    for(int i = 0; i < arrSize; i++){
         memcpy(&backend->p_rover.lidar[i], lidar + 4*i, 4);
     }
 }
