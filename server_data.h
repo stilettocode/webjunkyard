@@ -388,7 +388,10 @@ void handle_udp_get_request(unsigned int command, unsigned char* data);
 
 // UDP POST functions
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend);
-bool udp_post_rover_lidar(char* request, struct backend_data_t* backend);
-void handle_udp_post_request(unsigned int command, char* data, char* request, struct backend_data_t* backend);
+bool udp_post_rover_lidar(char* request, struct backend_data_t* backend, int received_bytes);
+void handle_udp_post_request(unsigned int command, char* data, char* request, struct backend_data_t* backend, int received_bytes);
+
+//Helper functions
+void reverse_bytes(unsigned char* bytes);
 
 #endif

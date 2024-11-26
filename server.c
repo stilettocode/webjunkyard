@@ -30,7 +30,7 @@
 bool continue_server();
 bool big_endian();
 void get_contents();
-void reverse_bytes();
+//void reverse_bytes();
 void tss_to_unreal();
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
             else if (command < 2000){
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                handle_udp_post_request(command, data, client->request, backend);
+                handle_udp_post_request(command, data, client->request, backend, received_bytes);
                 
                 drop_udp_client(&udp_clients, client);
             }
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
             else if (command < 2000){
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                handle_udp_post_request(command, data, client->udp_request, backend);
+                handle_udp_post_request(command, data, client->udp_request, backend, received_bytes);
 
                 drop_udp_client(&udp_clients, client);
             }
@@ -567,6 +567,7 @@ bool big_endian(){
     }
 }
 
+/*
 void reverse_bytes(unsigned char* bytes){
     //expects 4 bytes to be flipped
     char temp;
@@ -576,7 +577,7 @@ void reverse_bytes(unsigned char* bytes){
         bytes[3 - i] = temp;
     }
 }
-
+*/
 void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct backend_data_t* backend){
 
     int breaks = backend->p_rover.breaks;

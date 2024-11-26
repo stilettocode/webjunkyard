@@ -83,7 +83,7 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
 
 }
 
-void handle_udp_post_request(unsigned int command, char* data, char* request, struct backend_data_t* backend){
+void handle_udp_post_request(unsigned int command, char* data, char* request, struct backend_data_t* backend, int received_bytes){
 
     if(command < 1103){
         printf("Not yet implemented.\n");
@@ -92,7 +92,7 @@ void handle_udp_post_request(unsigned int command, char* data, char* request, st
 
         if(command == 1130){
             printf("Posting PR Lidar,\n");
-            udp_post_rover_lidar(request, backend);
+            udp_post_rover_lidar(request, backend, received_bytes);
         }
         else{
             printf("Posting PR Telemetry.\n");
@@ -2395,22 +2395,30 @@ bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct 
     return true;
 }
 
-bool udp_post_rover_lidar(char* request, struct backend_data_t* backend){
+bool udp_post_rover_lidar(char* request, struct backend_data_t* backend, int received_bytes){
     char* lidar = request + 8;
-    int arrSize = sizeof(request) - 8;
 
+    //printf("received bytes: %d\n", received_bytes);
     float firstOne = 0;
     memcpy(&firstOne, request + 8, 4);
-    printf("first: %f\n", firstOne);
 
-    for(int i = 0; i < arrSize; i++){
+    backend->p_rover.lidar[0] = firstOne;
+
+    int total_floats = (received_bytes - 8)/4;
+    for(int i = 1; i < total_floats; i++){
+        reverse_bytes(lidar + 4*i);
         memcpy(&backend->p_rover.lidar[i], lidar + 4*i, 4);
     }
+
+    /*
     printf("lidar arr: ");
-    for(int i = 0; i < sizeof(backend->p_rover.lidar); i++){
+    for(int i = 0; i < total_floats; i++){
         printf("%f, ", backend->p_rover.lidar[i]);
     }
     printf("\n");
+
+    printf("first: %f\n", backend->p_rover.lidar[0]);
+    */
 }
 
 // -------------------------- Update --------------------------------
@@ -2527,4 +2535,14 @@ size_t rover_index(int idx){
     };
 
     return offsets[idx];
+}
+
+void reverse_bytes(unsigned char* bytes){
+    //expects 4 bytes to be flipped
+    char temp;
+    for(int i = 0; i < 2; i++){
+        temp = bytes[i];
+        bytes[i] = bytes[3 - i];
+        bytes[3 - i] = temp;
+    }
 }
