@@ -21,7 +21,7 @@
 
 // Uncomment this for extra print statements
 //#define VERBOSE_MODE 
-//#define TESTING_MODE
+#define TESTING_MODE
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                      Helper Functions Declarations
@@ -260,16 +260,16 @@ int main(int argc, char* argv[])
             int received_bytes = recvfrom(udp_socket, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
 
             if(!big_endian()){
-                reverse_bytes(client->request);
-                reverse_bytes(client->request + 4);
-                reverse_bytes(client->request + 8);   
+                reverse_bytes(client->udp_request);
+                reverse_bytes(client->udp_request + 4);
+                reverse_bytes(client->udp_request + 8);   
             }
 
             unsigned int time = 0;
             unsigned int command = 0;
             char data[4] = {0};
 
-            get_contents(client->request, &time, &command, data);
+            get_contents(client->udp_request, &time, &command, data);
             
             #ifdef TESTING_MODE
                 printf("time: %d, ", time);
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
             else if (command < 2000){
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                handle_udp_post_request(command, data, client->request, backend);
+                handle_udp_post_request(command, data, client->udp_request, backend);
 
                 drop_udp_client(&udp_clients, client);
             }

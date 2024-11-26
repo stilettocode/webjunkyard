@@ -197,10 +197,6 @@ struct backend_data_t* init_backend(){
         build_json_telemetry(&backend->evas[i], i, false);
     }
 
-    backend->p_rover.lidar[0] = 0;
-    for(int i = 0; i < MAX_LIDAR_SIZE; i++){
-        backend->p_rover.lidar[i] = 0;
-    }
     backend->p_rover.battery_level = 100;
     backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
     backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
@@ -2403,12 +2399,16 @@ bool udp_post_rover_lidar(char* request, struct backend_data_t* backend){
     char* lidar = request + 8;
     int arrSize = sizeof(request) - 8;
 
+    float firstOne = 0;
+    memcpy(&firstOne, request + 8, 4);
+    printf("first: %f\n", firstOne);
+
     for(int i = 0; i < arrSize; i++){
         memcpy(&backend->p_rover.lidar[i], lidar + 4*i, 4);
     }
     printf("lidar arr: ");
     for(int i = 0; i < sizeof(backend->p_rover.lidar); i++){
-        printf("%f,", backend->p_rover.lidar[i]);
+        printf("%f, ", backend->p_rover.lidar[i]);
     }
     printf("\n");
 }
