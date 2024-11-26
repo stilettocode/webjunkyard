@@ -197,6 +197,10 @@ struct backend_data_t* init_backend(){
         build_json_telemetry(&backend->evas[i], i, false);
     }
 
+    backend->p_rover.lidar[0] = 0;
+    for(int i = 0; i < MAX_LIDAR_SIZE; i++){
+        backend->p_rover.lidar[i] = 0;
+    }
     backend->p_rover.battery_level = 100;
     backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
     backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
@@ -2014,24 +2018,26 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
 
     float k = -0.01;
     if(p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
-        new_target_temp = MOON_HIGH_TEMPERATURE/2;
+        new_target_temp = MOON_HIGH_TEMPERATURE;
+        k /= 10;
     }
     else if(p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
-        new_target_temp = MOON_HIGH_TEMPERATURE/2;
+        new_target_temp = MOON_HIGH_TEMPERATURE;
+        k /= 10;
     }
     else if(p_rover->in_sunlight && !p_rover->ac_cooling && p_rover->ac_heating){
-        new_target_temp = MOON_HIGH_TEMPERATURE/2;
-        k *= 2;
+        new_target_temp = MOON_HIGH_TEMPERATURE;
     }
     else if(!p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
-        new_target_temp = MOON_LOW_TEMPERATURE/2;
+        new_target_temp = MOON_LOW_TEMPERATURE;
+        k /= 10;
     }
     else if(!p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
-        new_target_temp = MOON_LOW_TEMPERATURE/2;
+        new_target_temp = MOON_LOW_TEMPERATURE;
+        k /= 10;
     }
     else if(!p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
-        new_target_temp = MOON_LOW_TEMPERATURE/2;
-        k *= 2;
+        new_target_temp = MOON_LOW_TEMPERATURE;
     }
     else if(p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
         new_target_temp = NOMINAL_CABIN_TEMPERATURE;
@@ -2048,6 +2054,7 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
         cabin_sim->target_temp = new_target_temp;
     }
 
+    // Newton's cooling law
     p_rover->cabin_temperature = cabin_sim->target_temp + ((cabin_sim->object_temp - cabin_sim->target_temp) * (pow(E, k*(server_time - cabin_sim->start_time))));
 
     /*
@@ -2399,6 +2406,11 @@ bool udp_post_rover_lidar(char* request, struct backend_data_t* backend){
     for(int i = 0; i < arrSize; i++){
         memcpy(&backend->p_rover.lidar[i], lidar + 4*i, 4);
     }
+    printf("lidar arr: ");
+    for(int i = 0; i < sizeof(backend->p_rover.lidar); i++){
+        printf("%f,", backend->p_rover.lidar[i]);
+    }
+    printf("\n");
 }
 
 // -------------------------- Update --------------------------------

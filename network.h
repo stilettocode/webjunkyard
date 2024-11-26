@@ -40,6 +40,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #define MAX_REQUEST_SIZE 2047
+#define MAX_UDP_REQUEST_SIZE 8008
 
 struct client_info_t {
     socklen_t address_length;
@@ -47,6 +48,7 @@ struct client_info_t {
     struct sockaddr_in udp_addr;
     SOCKET socket;
     char request[MAX_REQUEST_SIZE+1];
+    char udp_request[MAX_UDP_REQUEST_SIZE];
     int received;
     int message_size;
     struct client_info_t* next;

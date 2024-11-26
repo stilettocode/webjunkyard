@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
             struct client_info_t* udp_clients = NULL;
             struct client_info_t* client = get_client(&udp_clients, -1);
 
-            int received_bytes = recvfrom(udp_socket, client->request, MAX_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
+            int received_bytes = recvfrom(udp_socket, client->request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
 
             unsigned int time = 0;
             unsigned int command = 0;
@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
             struct client_info_t* udp_clients = NULL;
             struct client_info_t* client = get_client(&udp_clients, -1);
 
-            int received_bytes = recvfrom(udp_socket, client->request, MAX_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
+            int received_bytes = recvfrom(udp_socket, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
 
             if(!big_endian()){
                 reverse_bytes(client->request);

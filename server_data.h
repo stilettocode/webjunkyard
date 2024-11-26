@@ -209,7 +209,7 @@ struct pr_data_t {
     float distance_traveled;
     float speed;
     float surface_incline;
-    float lidar[MAX_LIDAR_SIZE]; //not yet implemented
+    float lidar[MAX_LIDAR_SIZE];
 
     // Life Support
     float oxygen_levels;

@@ -89,8 +89,14 @@ function loadPR_Telemetry(){
         let cabin_pressure = data.pr_telemetry.cabin_pressure;
         let cabin_temperature = data.pr_telemetry.cabin_temperature;
 
-        let power_consumption_rate = data.pr_telemetry.power_consumption_rate;
-        let motor_power_consumption = data.pr_telemetry.motor_power_consumption;
+        // Convert the porcentage consumption rate to watts
+        // Total_battery_capacity is assuming same capacity as an electric car in Joules
+        let total_battery_capacity = 4320000;
+
+        // Power_consumption_rate is now in kiloWatt/hour
+        let power_consumption_rate = ((total_battery_capacity * data.pr_telemetry.power_consumption_rate / 100) / 1000) * 3600;
+
+        let motor_power_consumption = ((total_battery_capacity * data.pr_telemetry.motor_power_consumption / 100) / 1000) * 3600;
 
         let internal_lights = data.pr_telemetry.internal_lights;
         let external_lights = data.pr_telemetry.external_lights;
