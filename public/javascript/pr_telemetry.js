@@ -25,12 +25,14 @@ function loadPR_Telemetry(){
         }
         
         if(data.pr_telemetry.lights_on == true){
-            //document.getElementById("lights_on").innerText = "ON";
+            document.getElementById("external_lights").innerText = "ON";
+            document.getElementById("internal_lights").innerText = "ON";
             document.getElementById("lightsOnSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("lightsOnSwitch").checked = true;
         }
         else{
-            //document.getElementById("lights_on").innerText = "OFF";
+            document.getElementById("internal_lights").innerText = "OFF";
+            document.getElementById("external_lights").innerText = "OFF";
             document.getElementById("lightsOnSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
             document.getElementById("lightsOnSwitch").checked = false;
         } 
@@ -98,8 +100,8 @@ function loadPR_Telemetry(){
 
         let motor_power_consumption = ((total_battery_capacity * data.pr_telemetry.motor_power_consumption / 100) / 1000) * 3600;
 
-        let internal_lights = data.pr_telemetry.internal_lights;
-        let external_lights = data.pr_telemetry.external_lights;
+        //let internal_lights = data.pr_telemetry.internal_lights;
+        //let external_lights = data.pr_telemetry.external_lights;
 
         let external_temp = data.pr_telemetry.external_temp;
         let coolant_level = data.pr_telemetry.pr_coolant_level;
@@ -127,7 +129,7 @@ function loadPR_Telemetry(){
         document.getElementById("heading").innerText = heading.toFixed(2) + " rads";
         document.getElementById("roll").innerText = roll.toFixed(2) + " rads";
         document.getElementById("pitch").innerText = pitch.toFixed(2) + " rads";
-        document.getElementById("distance_traveled").innerText = distance_traveled.toFixed(2);
+        document.getElementById("distance_traveled").innerText = distance_traveled.toFixed(2) + " m";
         document.getElementById("speed").innerText = speed.toFixed(2) + " m/s";
         document.getElementById("surface_incline").innerText = surface_incline.toFixed(2) + " rads";
 
@@ -140,8 +142,8 @@ function loadPR_Telemetry(){
         document.getElementById("cabin_temperature").innerText = cabin_temperature.toFixed(2) + " °C";
         document.getElementById("power_consumption_rate").innerText = power_consumption_rate.toFixed(2) + " kWh";
         document.getElementById("solar_panel_efficiency").innerText = solar_panel_efficiency.toFixed(2);
-        document.getElementById("internal_lights").innerText = internal_lights;
-        document.getElementById("external_lights").innerText = external_lights;
+        //document.getElementById("internal_lights").innerText = internal_lights;
+        //document.getElementById("external_lights").innerText = external_lights;
         document.getElementById("external_temp").innerText = external_temp.toFixed(2) + " °C";
         document.getElementById("pr_coolant_level").innerText = coolant_level.toFixed(2) + " %";
         document.getElementById("pr_coolant_pressure").innerText = coolant_pressure.toFixed(2) + " psi";

@@ -2009,36 +2009,38 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
 
     float new_target_temp;
 
-    float k = -0.01;
+    float k;
     if(p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
         new_target_temp = CABIN_HIGH_TEMPERATURE;
-        k /= 10;
+        k = CABIN_HIGH_RATE;
     }
     else if(p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
         new_target_temp = CABIN_HIGH_TEMPERATURE;
-        k /= 10;
+        k = CABIN_HIGH_RATE;
     }
     else if(p_rover->in_sunlight && !p_rover->ac_cooling && p_rover->ac_heating){
         new_target_temp = CABIN_HIGH_TEMPERATURE;
+        k = CABIN_HIGH_RATE * 2;
     }
     else if(!p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
         new_target_temp = CABIN_LOW_TEMPERATURE;
-        k /= 10;
+        k = CABIN_LOW_RATE;
     }
     else if(!p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
         new_target_temp = CABIN_LOW_TEMPERATURE;
-        k /= 10;
+        k = CABIN_LOW_RATE * 2;
     }
     else if(!p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
         new_target_temp = CABIN_LOW_TEMPERATURE;
+        k = CABIN_LOW_RATE;
     }
     else if(p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
         new_target_temp = CABIN_COOLING_TEMP;
-        k *= 4;
+        k = CABIN_COOLING_RATE;
     }
     else if(!p_rover->in_sunlight && !p_rover->ac_cooling && p_rover->ac_heating){
         new_target_temp = CABIN_HEATING_TEMP;
-        k *= 4;
+        k = CABIN_HEATING_RATE;
     }
     
     if (cabin_sim->target_temp != new_target_temp){
