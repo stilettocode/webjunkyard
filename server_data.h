@@ -49,25 +49,43 @@
 #define THROTTLE_CONSUMPTION_RATE 0.1f
 #define THROTTLE_MAX_ABS_VALUE 100.0f
 
-#define MAX_SOLAR_PANEL_DUST_ACCUM 100.0f;
-#define SOLAR_PANEL_RECHARGE_RATE 0.1f;
+#define MAX_SOLAR_PANEL_DUST_ACCUM 100.0f
+#define SOLAR_PANEL_RECHARGE_RATE 0.1f
 
-#define EXTERNAL_LIGHTS_CONSUMPTION_RATE 0.01f;
-#define INTERNAL_LIGHTS_CONSUMPTION_RATE 0.005f;
+#define EXTERNAL_LIGHTS_CONSUMPTION_RATE 0.01f
+#define INTERNAL_LIGHTS_CONSUMPTION_RATE 0.005f
 
-#define CO2_SCRUBBER_CONSUMPTION_RATE 0.01f;
+#define CO2_SCRUBBER_CONSUMPTION_RATE 0.01f
 
-#define AC_COOLING_CONSUMPTION_RATE 0.05f;
-#define AC_HEATING_CONSUMPTION_RATE 0.05f;
+#define AC_COOLING_CONSUMPTION_RATE 0.05f
+#define AC_HEATING_CONSUMPTION_RATE 0.05f
 
 #define E 2.718281828f
-#define MOON_HIGH_TEMPERATURE 121
-#define MOON_LOW_TEMPERATURE -133
+//Cooling/heating rates modify k value in Newton's cooling law formula
+#define MOON_HIGH_TEMP_RATE -0.1f
+#define MOON_HIGH_TEMPERATURE 121.0f
+#define MOON_LOW_TEMP_RATE -0.1f
+#define MOON_LOW_TEMPERATURE -133.0f
 
-#define NOMINAL_CABIN_TEMPERATURE 22.0f;
-#define NOMINAL_CABIN_PRESSURE 1.0f;
-#define CABIN_TEMPERATURE_HEATING_RATE 2.0f;
-#define CABIN_TEMPERATURE_COOLING_RATE 2.0f;
+#define CABIN_HIGH_RATE
+#define CABIN_HIGH_TEMPERATURE 121.0f
+#define CABIN_LOW_RATE
+#define CABIN_LOW_TEMPERATURE -133.0f
+
+#define CABIN_COOLING_RATE 
+#define CABIN_COOLING_TEMP 21.0f
+#define CABIN_HEATING_RATE
+#define CABIN_HEATING_TEMP 23.0F
+
+#define NOMINAL_CABIN_TEMPERATURE 22.0f
+
+#define NOMINAL_CABIN_PRESSURE 4.0f
+#define CABIN_TEMPERATURE_HEATING_RATE 2.0f
+#define CABIN_TEMPERATURE_COOLING_RATE 2.0f
+
+#define NOMINAL_COOLANT_LEVEL 100.0f
+#define NOMINAL_COOLANT_STORAGE 100.0f
+#define NOMINAL_COOLANT_PRESSURE 500.0f
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
@@ -258,6 +276,10 @@ struct pr_sim_data_t {
     float object_temp;
     uint32_t start_time;
 
+    float external_target_temp;
+    float external_object_temp;
+    uint32_t external_start_time;
+
 };
 
 struct eva_failures_t {
@@ -370,6 +392,7 @@ float randomized_sine_value(float x, float avg, float amp, float phase, float fr
 void simulate_telemetry(struct telemetry_data_t telemetry);
 void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, struct backend_data_t* backend);
 void simulate_cabin_temperature(struct backend_data_t* backend);
+void simulate_external_temperature(struct backend_data_t* backend);
 void simulate_backend  (struct backend_data_t* backend);
 
 // UDP GET functions

@@ -19,6 +19,11 @@
 // Server Variables
 #define MAX_LINE_LENGHT 1024
 
+#define TSS_TO_UNREAL_BREAKS_COMMAND 2000
+#define TSS_TO_UNREAL_LIGHTS_COMMAND 2001
+#define TSS_TO_UNREAL_STEERING_COMMAND 2002
+#define TSS_TO_UNREAL_THROTTLE_COMMAND 2003
+
 // Uncomment this for extra print statements
 //#define VERBOSE_MODE 
 #define TESTING_MODE
@@ -61,10 +66,6 @@ int main(int argc, char* argv[])
     char port[6] = "14141";
     if(argc > 1 && strcmp(argv[1], "--local") == 0){
         strcpy(hostname, "127.0.0.1");
-        if (argc > 2 && strcmp(argv[2], "--udp") == 0){
-            udp_only = true;
-        }
-
     } else {
         get_ip_address(hostname);
     }
@@ -72,7 +73,9 @@ int main(int argc, char* argv[])
     for (int i = 0; i < argc; i++){
         if (strcmp(argv[i], "--auth") == 0){
             protected_mode = true;
-            break;
+        }
+        else if(strcmp(argv[i], "--udp") == 0){
+            udp_only = true;
         }
     }
 
@@ -150,29 +153,58 @@ int main(int argc, char* argv[])
         fd_set reads;
         reads = wait_on_clients(clients, server, udp_socket);
 
+        // Server Listen Socket got a new message
+        if(FD_ISSET(server, &reads)){
+
+            // create a new client
+            struct client_info_t* client = get_client(&clients, -1);
+
+            // create client socket
+            client->socket = accept(server, (struct sockaddr*) &client->address, &client->address_length);
+            if(!ISVALIDSOCKET(client->socket)){
+                fprintf(stderr, "accept() failed with error: %d", GETSOCKETERRNO());
+            }
+
+            #ifdef VERBOSE_MODE
+            if(strcmp(get_client_address(client), hostname)){
+                printf("New Connection from %s\n", get_client_address(client));
+
+            }
+            #endif
+
+        }
+
         // Handle UDP
         if(FD_ISSET(udp_socket, &reads)){
 
             struct client_info_t* udp_clients = NULL;
             struct client_info_t* client = get_client(&udp_clients, -1);
 
-            int received_bytes = recvfrom(udp_socket, client->request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
+            int received_bytes = recvfrom(udp_socket, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
+
+            if(!big_endian()){
+                reverse_bytes(client->udp_request);
+                reverse_bytes(client->udp_request + 4);
+                reverse_bytes(client->udp_request + 8);   
+            }
 
             unsigned int time = 0;
             unsigned int command = 0;
             char data[4] = {0};
 
-            get_contents(client->request, &time, &command, data);
+            get_contents(client->udp_request, &time, &command, data);
             
             #ifdef TESTING_MODE
+                printf("\nNew datagram received.\n");
+
                 printf("time: %d, ", time);
                 printf("command: %d, ", command);
                 float value = 0;
                 memcpy(&value, data, 4);
-                printf("data float: %f\n", value);
-                int valuei = 0;
+                printf("data float: %f, ", value);
+                int valuei = 0;   
                 memcpy(&valuei, data, 4);
-                printf("data int: %d\n", valuei);
+                printf("data int: %d\n\n", valuei);
             #endif
 
             //check if it's a GET request
@@ -183,9 +215,15 @@ int main(int argc, char* argv[])
 
                 unsigned char response_buffer[12] = {0};
 
-                memcpy(response_buffer, &time, 4);
+                memcpy(response_buffer, &backend->server_up_time, 4);
                 memcpy(response_buffer + 4, &command, 4);
                 memcpy(response_buffer + 8, data, 4);
+
+                if(!big_endian()){
+                    reverse_bytes(response_buffer);
+                    reverse_bytes(response_buffer + 4);
+                    reverse_bytes(response_buffer + 8);
+                }
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
@@ -198,16 +236,20 @@ int main(int argc, char* argv[])
             else if (command < 2000){
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
-                handle_udp_post_request(command, data, client->request, backend, received_bytes);
-                
+                handle_udp_post_request(command, data, client->udp_request, backend, received_bytes);
+
                 drop_udp_client(&udp_clients, client);
             }
 
-            else if (command == 2000){
-                
+            else if (command == 3000){
+
                 unreal_addr = client->udp_addr;
                 unreal_addr_len = client->address_length;
                 unreal = true;
+
+                #ifdef TESTING_MODE
+                    printf("Unreal address set to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+                #endif
 
                 drop_udp_client(&udp_clients, client);
             }
@@ -215,6 +257,34 @@ int main(int argc, char* argv[])
             else {
                 drop_udp_client(&udp_clients, client);
             }
+        }
+
+        // Send telemetry values to Unreal if there's an address saved
+        if(unreal){
+            tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
+        }
+
+        // Tell Unreal to send new destination
+        if(backend->p_rover.switch_dest && unreal){
+            
+            backend->p_rover.switch_dest = false;
+            
+            char buffer[12] = {0};
+            unsigned int command = 2004;
+            bool switch_dest = true;
+            
+            memcpy(buffer, &backend->server_up_time, 4);
+            memcpy(buffer + 4, &command, 4);
+            memcpy(buffer + 8, &switch_dest, 4);
+
+            if(!big_endian()){
+                reverse_bytes(buffer);
+                reverse_bytes(buffer + 4);
+                reverse_bytes(buffer + 8);
+            }
+
+            sendto(udp_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&unreal_addr, unreal_addr_len);
+            printf("Sent switch destination request to Unreal\n");
         }
 
         if(!continue_server()){
@@ -272,14 +342,16 @@ int main(int argc, char* argv[])
             get_contents(client->udp_request, &time, &command, data);
             
             #ifdef TESTING_MODE
+                printf("\nNew datagram received.\n");
+
                 printf("time: %d, ", time);
                 printf("command: %d, ", command);
                 float value = 0;
                 memcpy(&value, data, 4);
-                printf("data float: %f\n", value);
+                printf("data float: %f, ", value);
                 int valuei = 0;   
                 memcpy(&valuei, data, 4);
-                printf("data int: %d\n", valuei);
+                printf("data int: %d\n\n", valuei);
             #endif
 
             //check if it's a GET request
@@ -322,6 +394,10 @@ int main(int argc, char* argv[])
                 unreal_addr_len = client->address_length;
                 unreal = true;
 
+                #ifdef TESTING_MODE
+                    printf("Unreal address set to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+                #endif
+
                 drop_udp_client(&udp_clients, client);
             }
 
@@ -330,7 +406,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        // Send telemetry values to Unreal
+        // Send telemetry values to Unreal if there's an address saved
         if(unreal){
             tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
         }
@@ -355,13 +431,13 @@ int main(int argc, char* argv[])
             }
 
             sendto(udp_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&unreal_addr, unreal_addr_len);
-            printf("Sent request to unreal to switch destination.\n");
+            printf("Sent switch destination request to Unreal\n");
         }
 
         // Server-Client Socket got a new message
         struct client_info_t* client = clients;
 
-        //Check if client is on the whitelist
+        //Check if client is on the http whitelist
         if(protected_mode && client){
             bool found = false;
 
@@ -586,52 +662,43 @@ void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct
     float throttle = backend->p_rover.throttle;
 
     unsigned int time = backend->server_up_time;
-    unsigned int command = 2000;
-    unsigned int command2 = 2001;
-    unsigned int command3 = 2002;
-    unsigned int command4 = 2003;
+    unsigned int command = TSS_TO_UNREAL_BREAKS_COMMAND;
+    unsigned int command2 = TSS_TO_UNREAL_LIGHTS_COMMAND;
+    unsigned int command3 = TSS_TO_UNREAL_STEERING_COMMAND;
+    unsigned int command4 = TSS_TO_UNREAL_THROTTLE_COMMAND;
 
     unsigned char buffer[12];
+
+    if(!big_endian()){
+        reverse_bytes((unsigned char*)&time);
+        reverse_bytes((unsigned char*)&command);
+        reverse_bytes((unsigned char*)&command2);
+        reverse_bytes((unsigned char*)&command3);
+        reverse_bytes((unsigned char*)&command4);
+        reverse_bytes((unsigned char*)&breaks);
+        reverse_bytes((unsigned char*)&lights_on);
+        reverse_bytes((unsigned char*)&steering);
+        reverse_bytes((unsigned char*)&throttle);
+    }
 
     memcpy(buffer, &time, 4);
     memcpy(buffer + 4, &command, 4);
     memcpy(buffer + 8, &breaks, 4);
-
-    if(!big_endian()){
-        reverse_bytes(buffer);
-        reverse_bytes(buffer + 4);
-        reverse_bytes(buffer + 8);
-    }
 
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 
     memcpy(buffer + 4, &command2, 4);
     memcpy(buffer + 8, &lights_on, 4);
 
-    if(!big_endian()){
-        reverse_bytes(buffer + 4);
-        reverse_bytes(buffer + 8);
-    }
-
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 
     memcpy(buffer + 4, &command3, 4);
     memcpy(buffer + 8, &steering, 4);
 
-    if(!big_endian()){
-        reverse_bytes(buffer + 4);
-        reverse_bytes(buffer + 8);
-    }
-
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 
     memcpy(buffer + 4, &command4, 4);
     memcpy(buffer + 8, &throttle, 4);
-
-    if(!big_endian()){
-        reverse_bytes(buffer + 4);
-        reverse_bytes(buffer + 8);
-    }
 
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 }

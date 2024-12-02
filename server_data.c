@@ -201,6 +201,10 @@ struct backend_data_t* init_backend(){
     backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
     backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
     backend->pr_sim.object_temp = NOMINAL_CABIN_TEMPERATURE;
+    backend->p_rover.cabin_pressure = NOMINAL_CABIN_PRESSURE;
+    backend->p_rover.pr_coolant_level = NOMINAL_COOLANT_LEVEL;
+    backend->p_rover.pr_coolant_storage = NOMINAL_COOLANT_STORAGE;
+    backend->p_rover.pr_coolant_pressure = NOMINAL_COOLANT_PRESSURE;
 
     return backend;
 }
@@ -1936,6 +1940,8 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
 
 void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, struct backend_data_t* backend){
 
+    int random_seed = backend->server_up_time;
+
     // In Sunlight
     if(p_rover->in_sunlight){
         p_rover->solar_panel_efficiency = 1 - p_rover->solar_panel_dust_accum/MAX_SOLAR_PANEL_DUST_ACCUM;
@@ -1984,23 +1990,14 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
         p_rover->battery_level = 0;
     }
 
+    //Fans
+    //p_rover->ac_fan_pri += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - p_rover->ac_fan_pri);
+
+    //printf("ac pri: %f\n", p_rover->ac_fan_pri);
 
     simulate_cabin_temperature(backend);
-    /*
-    //Cabin temperature IN-PROGRESS
-    float nominal_cabin_temp = NOMINAL_CABIN_TEMPERATURE;
-
-    if(p_rover->in_sunlight && !p_rover->ac_cooling){
-        p_rover->cabin_temperature += CABIN_TEMPERATURE_HEATING_RATE;
-    }
-    else if(!p_rover->in_sunlight && !p_rover->ac_heating){
-        p_rover->cabin_temperature -= CABIN_TEMPERATURE_COOLING_RATE;
-    }
-    else{
-        p_rover->cabin_temperature = randomized_sine_value(server_time, nominal_cabin_temp, 2.0f, 350.0f, 1.5f);
-    }
-    */
-
+    simulate_external_temperature(backend);
+    
     //printf("Battery: %.2f\n", p_rover->battery_level);
 }
 
@@ -2014,33 +2011,33 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
 
     float k = -0.01;
     if(p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
-        new_target_temp = MOON_HIGH_TEMPERATURE;
+        new_target_temp = CABIN_HIGH_TEMPERATURE;
         k /= 10;
     }
     else if(p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
-        new_target_temp = MOON_HIGH_TEMPERATURE;
+        new_target_temp = CABIN_HIGH_TEMPERATURE;
         k /= 10;
     }
     else if(p_rover->in_sunlight && !p_rover->ac_cooling && p_rover->ac_heating){
-        new_target_temp = MOON_HIGH_TEMPERATURE;
+        new_target_temp = CABIN_HIGH_TEMPERATURE;
     }
     else if(!p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
-        new_target_temp = MOON_LOW_TEMPERATURE;
+        new_target_temp = CABIN_LOW_TEMPERATURE;
         k /= 10;
     }
     else if(!p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
-        new_target_temp = MOON_LOW_TEMPERATURE;
+        new_target_temp = CABIN_LOW_TEMPERATURE;
         k /= 10;
     }
     else if(!p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
-        new_target_temp = MOON_LOW_TEMPERATURE;
+        new_target_temp = CABIN_LOW_TEMPERATURE;
     }
     else if(p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
-        new_target_temp = NOMINAL_CABIN_TEMPERATURE;
+        new_target_temp = CABIN_COOLING_TEMP;
         k *= 4;
     }
     else if(!p_rover->in_sunlight && !p_rover->ac_cooling && p_rover->ac_heating){
-        new_target_temp = NOMINAL_CABIN_TEMPERATURE;
+        new_target_temp = CABIN_HEATING_TEMP;
         k *= 4;
     }
     
@@ -2058,6 +2055,34 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
     printf("start_time: %d\n", cabin_sim->start_time);
     printf("server_time: %d\n", backend->server_up_time);
     */
+
+}
+
+void simulate_external_temperature(struct backend_data_t* backend){
+    struct pr_data_t* p_rover = &backend->p_rover;
+    struct pr_sim_data_t* cabin_sim = &backend->pr_sim;
+    uint32_t server_time = backend->server_up_time;
+
+    float new_external_target_temp;
+    float k;
+
+    if(p_rover->in_sunlight){
+        new_external_target_temp = MOON_HIGH_TEMPERATURE;
+        k = MOON_HIGH_TEMP_RATE;
+    }
+    else{
+        new_external_target_temp = MOON_LOW_TEMPERATURE;
+        k = MOON_LOW_TEMP_RATE;
+    }
+
+    if(cabin_sim->external_target_temp != new_external_target_temp){
+        cabin_sim->external_target_temp = new_external_target_temp;
+        cabin_sim->external_start_time = server_time;
+        cabin_sim->external_object_temp = p_rover->external_temp;
+    }
+
+    // Newton's cooling law
+    p_rover->external_temp = cabin_sim->external_target_temp + ((cabin_sim->external_object_temp - cabin_sim->external_target_temp) * (pow(E, k*(server_time - cabin_sim->external_start_time))));
 
 }
 
