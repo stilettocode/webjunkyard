@@ -74,9 +74,9 @@
 #define CABIN_LOW_TEMPERATURE -133.0f
 
 #define CABIN_COOLING_RATE -0.04f
-#define CABIN_COOLING_TEMP 21.0f
+#define CABIN_COOLING_TEMP 21.0f // Cooling target temperature
 #define CABIN_HEATING_RATE -0.04f
-#define CABIN_HEATING_TEMP 23.0F
+#define CABIN_HEATING_TEMP 23.0F // Heating target temperature
 
 #define NOMINAL_CABIN_TEMPERATURE 22.0f
 
