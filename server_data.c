@@ -198,6 +198,7 @@ struct backend_data_t* init_backend(){
     }
 
     backend->p_rover.battery_level = 100;
+    backend->p_rover.oxygen_tank = 100;
     backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
     backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
     backend->pr_sim.object_temp = NOMINAL_CABIN_TEMPERATURE;
@@ -1560,6 +1561,7 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "ac_cooling", cJSON_CreateBool(rover->ac_cooling));
     cJSON_AddItemToObject(pr_telemetry, "co2_scrubber", cJSON_CreateBool(rover->co2_scrubber));
     cJSON_AddItemToObject(pr_telemetry, "lights_on", cJSON_CreateBool(rover->lights_on));
+    cJSON_AddItemToObject(pr_telemetry, "internal_lights_on", cJSON_CreateBool(rover->internal_lights_on));
     cJSON_AddItemToObject(pr_telemetry, "breaks", cJSON_CreateBool(rover->breaks));
     cJSON_AddItemToObject(pr_telemetry, "in_sunlight", cJSON_CreateBool(rover->in_sunlight));
     cJSON_AddItemToObject(pr_telemetry, "throttle", cJSON_CreateNumber(rover->throttle));
@@ -1573,21 +1575,23 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "distance_traveled", cJSON_CreateNumber(rover->distance_traveled));
     cJSON_AddItemToObject(pr_telemetry, "speed", cJSON_CreateNumber(rover->speed));
     cJSON_AddItemToObject(pr_telemetry, "surface_incline", cJSON_CreateNumber(rover->surface_incline));
-    cJSON_AddItemToObject(pr_telemetry, "lidar", cJSON_CreateArray());
+    //cJSON_AddItemToObject(pr_telemetry, "lidar", cJSON_CreateArray());
+    cJSON_AddItemToObject(pr_telemetry, "oxygen_tank", cJSON_CreateNumber(rover->oxygen_tank));
+    cJSON_AddItemToObject(pr_telemetry, "oxygen_pressure", cJSON_CreateNumber(rover->oxygen_pressure));
     cJSON_AddItemToObject(pr_telemetry, "oxygen_levels", cJSON_CreateNumber(rover->oxygen_levels));
-    cJSON_AddItemToObject(pr_telemetry, "ac_fan_pri", cJSON_CreateBool(rover->ac_fan_pri));
-    cJSON_AddItemToObject(pr_telemetry, "ac_fan_sec", cJSON_CreateBool(rover->ac_fan_sec));
+    cJSON_AddItemToObject(pr_telemetry, "fan_pri", cJSON_CreateBool(rover->fan_pri));
+    cJSON_AddItemToObject(pr_telemetry, "ac_fan_pri", cJSON_CreateNumber(rover->ac_fan_pri));
+    cJSON_AddItemToObject(pr_telemetry, "ac_fan_sec", cJSON_CreateNumber(rover->ac_fan_sec));
     cJSON_AddItemToObject(pr_telemetry, "cabin_pressure", cJSON_CreateNumber(rover->cabin_pressure));
     cJSON_AddItemToObject(pr_telemetry, "cabin_temperature", cJSON_CreateNumber(rover->cabin_temperature));
     cJSON_AddItemToObject(pr_telemetry, "battery_level", cJSON_CreateNumber(rover->battery_level));
     cJSON_AddItemToObject(pr_telemetry, "power_consumption_rate", cJSON_CreateNumber(rover->power_consumption_rate));
     cJSON_AddItemToObject(pr_telemetry, "solar_panel_efficiency", cJSON_CreateNumber(rover->solar_panel_efficiency));
-    cJSON_AddItemToObject(pr_telemetry, "internal_lights", cJSON_CreateBool(rover->internal_lights));
-    cJSON_AddItemToObject(pr_telemetry, "external_lights", cJSON_CreateBool(rover->external_lights));
     cJSON_AddItemToObject(pr_telemetry, "external_temp", cJSON_CreateNumber(rover->external_temp));
     cJSON_AddItemToObject(pr_telemetry, "pr_coolant_level", cJSON_CreateNumber(rover->pr_coolant_level));
     cJSON_AddItemToObject(pr_telemetry, "pr_coolant_pressure", cJSON_CreateNumber(rover->pr_coolant_pressure));
     cJSON_AddItemToObject(pr_telemetry, "pr_coolant_storage", cJSON_CreateNumber(rover->pr_coolant_storage));
+    cJSON_AddItemToObject(pr_telemetry, "radiator", cJSON_CreateNumber(rover->radiator));
     cJSON_AddItemToObject(pr_telemetry, "motor_power_consumption", cJSON_CreateNumber(rover->motor_power_consumption));
     cJSON_AddItemToObject(pr_telemetry, "terrain_condition", cJSON_CreateNumber(rover->terrain_condition));
     cJSON_AddItemToObject(pr_telemetry, "solar_panel_dust_accum", cJSON_CreateNumber(rover->solar_panel_dust_accum));
@@ -1732,14 +1736,14 @@ bool update_telemetry(struct telemetry_data_t* telemetry, uint32_t eva_time, str
         telemetry->fan_sec_rpm += randomized_sine_value(x, 0.8f, 0.2f, 540.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - telemetry->fan_sec_rpm);
         telemetry->fan_pri_rpm -= randomized_sine_value(x, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * (telemetry->fan_pri_rpm);
     }
-
+    //here
     // ---------------------------- Connected to the IMU
     if(uia_power_supply_connected && dcu_using_umbilical_power){
 
         // Fill Battery
         telemetry->batt_time += randomized_sine_value(x, 0.8f, 0.2f, 60.0f, 0.1f) * BATT_FILL_RATE;
         if(telemetry->batt_time > BATT_TIME_CAP){ telemetry->batt_time = BATT_TIME_CAP; }
-
+        
         // Fill oxygen
         if(uia_o2_supply_connected) {
             // On primary Oxygen
@@ -1942,6 +1946,34 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
 
     int random_seed = backend->server_up_time;
 
+    bool dcu_pump_is_open = backend->dcu.eva1_pump | backend->dcu.eva2_pump;
+    bool uia_water_supply_connected = backend->uia.eva1_water_supply | backend->uia.eva2_water_supply;
+    bool dcu_using_umbilical_power = backend->dcu.eva1_batt | backend->dcu.eva2_batt;
+    bool uia_power_supply_connected = backend->uia.eva1_power | backend->uia.eva2_power;
+    bool uia_oxy_connected = backend->uia.eva1_oxy | backend->uia.eva2_oxy;
+
+    // Drain resources from the PR
+    if(uia_power_supply_connected && dcu_using_umbilical_power){
+
+        if(dcu_pump_is_open){
+            // Fill EVA's coolant tank, drain PR's coolant tank 
+            if(uia_water_supply_connected){
+                p_rover->pr_coolant_storage -= (backend->uia.eva1_water_supply + backend->uia.eva2_water_supply) * PR_COOLANT_TANK_DRAIN_RATE;
+                if(p_rover->pr_coolant_storage < 0){
+                    p_rover->pr_coolant_storage = 0;
+                }
+            }
+        }
+
+        // Fill EVA's oxygen tank, drain PR's oxygen tank
+        if(uia_oxy_connected){
+            p_rover->oxygen_tank -= (backend->uia.eva1_oxy + backend->uia.eva2_oxy) * PR_OXYGEN_TANK_DRAIN_RATE;
+            if(p_rover->oxygen_tank < 0){
+                p_rover->oxygen_tank = 0;
+            }
+        }
+    }
+
     // In Sunlight
     if(p_rover->in_sunlight){
         p_rover->solar_panel_efficiency = 1 - p_rover->solar_panel_dust_accum/MAX_SOLAR_PANEL_DUST_ACCUM;
@@ -1951,16 +1983,8 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
     }
 
     // Internal/External Lights
-    if(p_rover->lights_on){
-        p_rover->internal_lights = true;
-        p_rover->external_lights = true;
-    }
-    else{
-        p_rover->internal_lights = false;
-        p_rover->external_lights = false;
-    }
-    float internal_light_rate = p_rover->internal_lights * INTERNAL_LIGHTS_CONSUMPTION_RATE;
-    float external_light_rate = p_rover->external_lights * EXTERNAL_LIGHTS_CONSUMPTION_RATE;
+    float external_light_rate = p_rover->lights_on * EXTERNAL_LIGHTS_CONSUMPTION_RATE;
+    float internal_light_rate = p_rover->internal_lights_on * INTERNAL_LIGHTS_CONSUMPTION_RATE;
     float total_light_consumption = internal_light_rate + external_light_rate;
 
     // CO2 Scrubber
@@ -2397,27 +2421,20 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 1103;
 
-    if(off_set > 21){
+    if(off_set > 22){
         printf("Command not valid.\n");
         return false;
     }
 
     char* p_rover = (char*)&(backend->p_rover);
 
+    //access PR elemnts by index
     p_rover += rover_index(off_set);
 
-    if (off_set < 6){
-        bool val;
-        val = data[0] | data[3];
+    float val;
+    memcpy(&val, data, 4);
 
-        *(bool*)p_rover = val;
-    }
-    else {
-        float val;
-        memcpy(&val, data, 4);
-
-        *(float*)p_rover = val;
-    }
+    *(float*)p_rover = val;
 
     return true;
 }
@@ -2558,7 +2575,9 @@ size_t rover_index(int idx){
         offsetof(struct pr_data_t, switch_dest),
         offsetof(struct pr_data_t, dest_x),
         offsetof(struct pr_data_t, dest_y),
-        offsetof(struct pr_data_t, dest_z)
+        offsetof(struct pr_data_t, dest_z),
+        offsetof(struct pr_data_t, fan_pri),
+        offsetof(struct pr_data_t, internal_lights_on)
     };
 
     return offsets[idx];

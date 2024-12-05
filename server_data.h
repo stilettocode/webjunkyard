@@ -88,6 +88,10 @@
 #define NOMINAL_COOLANT_STORAGE 100.0f
 #define NOMINAL_COOLANT_PRESSURE 500.0f
 
+//Coolant and Oxygen rates
+#define PR_COOLANT_TANK_DRAIN_RATE 0.05f
+#define PR_OXYGEN_TANK_DRAIN_RATE 0.05f
+
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
 ///////////////////////////////////////////////////////////////////////////////////
@@ -211,6 +215,7 @@ struct pr_data_t {
     bool ac_heating;
     bool ac_cooling;
     bool lights_on;
+    bool internal_lights_on;
 
     // Drive Commands
     bool breaks;
@@ -233,23 +238,25 @@ struct pr_data_t {
     // Life Support
     float oxygen_levels;
     bool co2_scrubber;
-    bool ac_fan_pri;
-    bool ac_fan_sec;
+    float ac_fan_pri;
+    float ac_fan_sec;
+    bool fan_pri;
     float cabin_pressure;
     float cabin_temperature;
+    float oxygen_tank;
+    float oxygen_pressure;
 
     // Power System
     float battery_level;
     float power_consumption_rate;
     float solar_panel_efficiency;
-    bool internal_lights;
-    bool external_lights;
 
     // Thermal System
     float external_temp;
     float pr_coolant_level;
     float pr_coolant_pressure;
     float pr_coolant_storage;
+    float radiator;
 
     // Propulsion
     float motor_power_consumption;

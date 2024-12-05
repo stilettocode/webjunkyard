@@ -414,7 +414,7 @@ int main(int argc, char* argv[])
         // Tell Unreal to send new destination
         if(backend->p_rover.switch_dest && unreal){
             
-            backend->p_rover.switch_dest = false;
+            //backend->p_rover.switch_dest = false;
             
             char buffer[12] = {0};
             unsigned int command = 2004;
