@@ -146,174 +146,9 @@ int main(int argc, char* argv[])
 
     // Client connection Data
     struct client_info_t* clients = NULL;
-
-    ////////////////////////////////////////////////////////////////////// Start UDP-only server /////////////////////////////////////////////////////////////////////////////////////
-    while(udp_only){
-
-        fd_set reads;
-        reads = wait_on_clients(clients, server, udp_socket);
-
-        // Server Listen Socket got a new message
-        if(FD_ISSET(server, &reads)){
-
-            // create a new client
-            struct client_info_t* client = get_client(&clients, -1);
-
-            // create client socket
-            client->socket = accept(server, (struct sockaddr*) &client->address, &client->address_length);
-            if(!ISVALIDSOCKET(client->socket)){
-                fprintf(stderr, "accept() failed with error: %d", GETSOCKETERRNO());
-            }
-
-            #ifdef VERBOSE_MODE
-            if(strcmp(get_client_address(client), hostname)){
-                printf("New Connection from %s\n", get_client_address(client));
-
-            }
-            #endif
-
-        }
-
-        // Handle UDP
-        if(FD_ISSET(udp_socket, &reads)){
-
-            struct client_info_t* udp_clients = NULL;
-            struct client_info_t* client = get_client(&udp_clients, -1);
-
-            int received_bytes = recvfrom(udp_socket, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
-
-            if(!big_endian()){
-                reverse_bytes(client->udp_request);
-                reverse_bytes(client->udp_request + 4);
-                reverse_bytes(client->udp_request + 8);   
-            }
-
-            unsigned int time = 0;
-            unsigned int command = 0;
-            char data[4] = {0};
-
-            get_contents(client->udp_request, &time, &command, data);
-            
-            #ifdef TESTING_MODE
-                printf("\nNew datagram received.\n");
-
-                printf("time: %d, ", time);
-                printf("command: %d, ", command);
-                float value = 0;
-                memcpy(&value, data, 4);
-                printf("data float: %f, ", value);
-                int valuei = 0;   
-                memcpy(&valuei, data, 4);
-                printf("data int: %d\n\n", valuei);
-            #endif
-
-            //check if it's a GET request
-            if (command < 1000){
-                printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-                
-                unsigned char* response_buffer;
-
-                if(command == 164){
-                    response_buffer = malloc(sizeof(backend->p_rover.lidar) + 8);
-                    udp_get_rover_lidar(response_buffer + 8, backend);
-
-                    memcpy(response_buffer, &backend->server_up_time, 4);
-                    memcpy(response_buffer + 4, &command, 4);
-
-                    if(!big_endian()){
-                        reverse_bytes(response_buffer);
-                        reverse_bytes(response_buffer + 4);
-                    }
-
-                }
-                else{
-
-                    handle_udp_get_request(command, data);
-                    response_buffer = malloc(12);
-
-                    memcpy(response_buffer, &backend->server_up_time, 4);
-                    memcpy(response_buffer + 4, &command, 4);
-                    memcpy(response_buffer + 8, data, 4);
-
-                    if(!big_endian()){
-                        reverse_bytes(response_buffer);
-                        reverse_bytes(response_buffer + 4);
-                        reverse_bytes(response_buffer + 8);
-                    }
-                }
-
-                sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
-
-                printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-
-                drop_udp_client(&udp_clients, client);
-                free(response_buffer);
-
-            }
-            //check if it's a POST request
-            else if (command < 2000){
-                printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-
-                handle_udp_post_request(command, data, client->udp_request, backend, received_bytes);
-
-                drop_udp_client(&udp_clients, client);
-            }
-
-            else if (command == 3000){
-
-                unreal_addr = client->udp_addr;
-                unreal_addr_len = client->address_length;
-                unreal = true;
-
-                #ifdef TESTING_MODE
-                    printf("Unreal address set to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-                #endif
-
-                drop_udp_client(&udp_clients, client);
-            }
-
-            else {
-                drop_udp_client(&udp_clients, client);
-            }
-        }
-
-        // Send telemetry values to Unreal if there's an address saved
-        if(unreal){
-            tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
-        }
-
-        // Tell Unreal to send new destination
-        if(backend->p_rover.switch_dest && unreal){
-            
-            backend->p_rover.switch_dest = false;
-            
-            char buffer[12] = {0};
-            unsigned int command = 2004;
-            bool switch_dest = true;
-            
-            memcpy(buffer, &backend->server_up_time, 4);
-            memcpy(buffer + 4, &command, 4);
-            memcpy(buffer + 8, &switch_dest, 4);
-
-            if(!big_endian()){
-                reverse_bytes(buffer);
-                reverse_bytes(buffer + 4);
-                reverse_bytes(buffer + 8);
-            }
-
-            sendto(udp_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&unreal_addr, unreal_addr_len);
-            printf("Sent switch destination request to Unreal\n");
-        }
-
-        if(!continue_server()){
-            break;
-        }
-
-        simulate_backend(backend);
-    }
     
-    //////////////////////////////////////////////////////////////////// Start HTTP and UDP server /////////////////////////////////////////////////////////////////////////////////
-    while(!udp_only){
+    //////////////////////////////////////////////////////////////////// Server /////////////////////////////////////////////////////////////////////////////////
+    while(true){
 
         fd_set reads;
         reads = wait_on_clients(clients, server, udp_socket);
@@ -499,108 +334,111 @@ int main(int argc, char* argv[])
             }
         }
 
-        while(client){
-            
-            struct client_info_t* next_client = client->next;
+        if(!udp_only){
 
-            // Check if this client has pending request
-            if(FD_ISSET(client->socket, &reads)){
+            while(client){
+                
+                struct client_info_t* next_client = client->next;
 
-                // Request too big
-                if(MAX_REQUEST_SIZE <= client->received){
-                    send_400(client);
-                    drop_client(&clients, client);
-                    client = next_client;
-                    continue;
-                }
+                // Check if this client has pending request
+                if(FD_ISSET(client->socket, &reads)){
 
-                // read new bytes in
-                int bytes_received = recv(client->socket, client->request + client->received, MAX_REQUEST_SIZE - client->received, 0);
-
-                if(bytes_received < 1){
-                    
-                    #ifdef VERBOSE_MODE
-                    fprintf(stderr, "Unexpected Disconnect from %s\n", get_client_address(client));
-                    #endif
-                    drop_client(&clients, client);
-                } else {
-
-                    if(strncmp(client->request, "GET/", 4) == 0){
-                        printf("UDP request\n");
+                    // Request too big
+                    if(MAX_REQUEST_SIZE <= client->received){
+                        send_400(client);
+                        drop_client(&clients, client);
+                        client = next_client;
+                        continue;
                     }
 
-                    client->received += bytes_received;
-                    client->request[client->received] = 0;
+                    // read new bytes in
+                    int bytes_received = recv(client->socket, client->request + client->received, MAX_REQUEST_SIZE - client->received, 0);
 
-                    // Find marker for the end of the header
-                    char* q = strstr(client->request, "\r\n\r\n");
-                    if(q){
+                    if(bytes_received < 1){
+                        
+                        #ifdef VERBOSE_MODE
+                        fprintf(stderr, "Unexpected Disconnect from %s\n", get_client_address(client));
+                        #endif
+                        drop_client(&clients, client);
+                    } else {
 
-                        // Received a GET Request
-                        if(strncmp(client->request, "GET /", 5) == 0){
-                            char* path = client->request + 4;
-                            char* end_path = strstr(path, " ");
+                        if(strncmp(client->request, "GET/", 4) == 0){
+                            printf("UDP request\n");
+                        }
 
-                            if(!end_path){
+                        client->received += bytes_received;
+                        client->request[client->received] = 0;
+
+                        // Find marker for the end of the header
+                        char* q = strstr(client->request, "\r\n\r\n");
+                        if(q){
+
+                            // Received a GET Request
+                            if(strncmp(client->request, "GET /", 5) == 0){
+                                char* path = client->request + 4;
+                                char* end_path = strstr(path, " ");
+
+                                if(!end_path){
+                                    send_400(client);
+                                    drop_client(&clients, client);
+                                } else {
+                                    *end_path = 0;
+                                    serve_resource(client, path);
+                                    #ifdef VERBOSE_MODE
+                                    printf("serve_resource %s %s\n", get_client_address(client), path);
+                                    #endif
+                                    drop_client(&clients, client);
+                                }
+                            } // Received a POST Request 
+                            else if(strncmp(client->request, "POST /", 6) == 0) {
+
+                                // Get the size of the post request
+                                if(client->message_size == -1){
+                                    char* request_content_size_ptr = strstr(client->request, "Content-Length: ");
+                                    if(request_content_size_ptr){
+                                        request_content_size_ptr += strlen("Content-Length: ");
+                                        client->message_size = atoi(request_content_size_ptr) + (q - client->request) + 4; // The size of the content plus size of the header
+                                    } else {
+                                        // There is no content size
+                                        send_400(client);
+                                        drop_client(&clients, client);
+                                    }
+                                } 
+                                
+                                if(client->received == client->message_size){
+
+                                    // all bytes loaded
+                                    char* request_content = strstr(client->request, "\r\n\r\n");
+                                    request_content += 4; // Jump to the beginning of the context
+                                
+                                    #ifdef VERBOSE_MODE
+                                    printf("Received Post Content: \n%s\n", request_content);
+                                    #endif
+
+                                    if(!request_content){
+                                        send_400(client);
+                                        drop_client(&clients, client);
+                                    } else {
+                                        if(update_resource(request_content, backend)){
+                                            send_304(client);
+                                        } else {
+                                            send_400(client);
+                                        }
+                                        drop_client(&clients, client);
+                                    }
+                                }
+
+                            } // Received some other request
+                            else {
                                 send_400(client);
                                 drop_client(&clients, client);
-                            } else {
-                                *end_path = 0;
-                                serve_resource(client, path);
-                                #ifdef VERBOSE_MODE
-                                printf("serve_resource %s %s\n", get_client_address(client), path);
-                                #endif
-                                drop_client(&clients, client);
                             }
-                        } // Received a POST Request 
-                        else if(strncmp(client->request, "POST /", 6) == 0) {
-
-                            // Get the size of the post request
-                            if(client->message_size == -1){
-                                char* request_content_size_ptr = strstr(client->request, "Content-Length: ");
-                                if(request_content_size_ptr){
-                                    request_content_size_ptr += strlen("Content-Length: ");
-                                    client->message_size = atoi(request_content_size_ptr) + (q - client->request) + 4; // The size of the content plus size of the header
-                                } else {
-                                    // There is no content size
-                                    send_400(client);
-                                    drop_client(&clients, client);
-                                }
-                            } 
-                            
-                            if(client->received == client->message_size){
-
-                                // all bytes loaded
-                                char* request_content = strstr(client->request, "\r\n\r\n");
-                                request_content += 4; // Jump to the beginning of the context
-                            
-                                #ifdef VERBOSE_MODE
-                                printf("Received Post Content: \n%s\n", request_content);
-                                #endif
-
-                                if(!request_content){
-                                    send_400(client);
-                                    drop_client(&clients, client);
-                                } else {
-                                    if(update_resource(request_content, backend)){
-                                        send_304(client);
-                                    } else {
-                                        send_400(client);
-                                    }
-                                    drop_client(&clients, client);
-                                }
-                            }
-
-                        } // Received some other request
-                        else {
-                            send_400(client);
-                            drop_client(&clients, client);
                         }
                     }
                 }
-            }
 
-            client = next_client;
+                client = next_client;
+            }
         }
 
         if(!continue_server()) {
