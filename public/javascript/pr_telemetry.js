@@ -149,7 +149,7 @@ function loadPR_Telemetry(){
         document.getElementById("external_temp").innerText = external_temp.toFixed(2) + " °C";
         document.getElementById("pr_coolant_level").innerText = coolant_level.toFixed(2) + " %";
         document.getElementById("pr_coolant_pressure").innerText = coolant_pressure.toFixed(2) + " psi";
-        document.getElementById("pr_coolant_storage").innerText = coolant_storage.toFixed(2); + " %";
+        document.getElementById("pr_coolant_storage").innerText = coolant_storage.toFixed(2) + " %";
         document.getElementById("motor_power_consumption").innerText = motor_power_consumption.toFixed(2) + " kWh";
         document.getElementById("terrain_condition").innerText = terrain_condition.toFixed(2);
         document.getElementById("mission_elapsed_time").innerText = mission_elapsed_time.toFixed(2);
@@ -158,7 +158,7 @@ function loadPR_Telemetry(){
         document.getElementById("distance_from_base").innerText = distance_from_base.toFixed(2) + " m";
 
         //Destination
-        document.getElementById("switch_dest").innerText = switch_dest;
+        //document.getElementById("pr_switch_dest").innerText = switch_dest;
         document.getElementById("dest_x").innerText = dest_x.toFixed(2);
         document.getElementById("dest_y").innerText = dest_y.toFixed(2);
         document.getElementById("dest_z").innerText = dest_z.toFixed(2);

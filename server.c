@@ -33,7 +33,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 bool continue_server();
-bool big_endian();
+//bool big_endian();
 void get_contents();
 //void reverse_bytes();
 void tss_to_unreal();
@@ -210,19 +210,36 @@ int main(int argc, char* argv[])
             //check if it's a GET request
             if (command < 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+                
+                unsigned char* response_buffer;
 
-                handle_udp_get_request(command, data);
+                if(command == 164){
+                    response_buffer = malloc(sizeof(backend->p_rover.lidar) + 8);
+                    udp_get_rover_lidar(response_buffer + 8, backend);
 
-                unsigned char response_buffer[12] = {0};
+                    memcpy(response_buffer, &backend->server_up_time, 4);
+                    memcpy(response_buffer + 4, &command, 4);
 
-                memcpy(response_buffer, &backend->server_up_time, 4);
-                memcpy(response_buffer + 4, &command, 4);
-                memcpy(response_buffer + 8, data, 4);
+                    if(!big_endian()){
+                        reverse_bytes(response_buffer);
+                        reverse_bytes(response_buffer + 4);
+                    }
 
-                if(!big_endian()){
-                    reverse_bytes(response_buffer);
-                    reverse_bytes(response_buffer + 4);
-                    reverse_bytes(response_buffer + 8);
+                }
+                else{
+
+                    handle_udp_get_request(command, data);
+                    response_buffer = malloc(12);
+
+                    memcpy(response_buffer, &backend->server_up_time, 4);
+                    memcpy(response_buffer + 4, &command, 4);
+                    memcpy(response_buffer + 8, data, 4);
+
+                    if(!big_endian()){
+                        reverse_bytes(response_buffer);
+                        reverse_bytes(response_buffer + 4);
+                        reverse_bytes(response_buffer + 8);
+                    }
                 }
 
                 sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
@@ -230,6 +247,7 @@ int main(int argc, char* argv[])
                 printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
 
                 drop_udp_client(&udp_clients, client);
+                free(response_buffer);
 
             }
             //check if it's a POST request
@@ -357,26 +375,49 @@ int main(int argc, char* argv[])
             //check if it's a GET request
             if (command < 1000){
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+                
+                unsigned char* response_buffer;
+                int buffer_size = 0;
 
-                handle_udp_get_request(command, data);
+                if(command == 164){
+                    response_buffer = malloc(sizeof(backend->p_rover.lidar) + 8);
+                    buffer_size = sizeof(backend->p_rover.lidar) + 8;
 
-                unsigned char response_buffer[12] = {0};
+                    udp_get_rover_lidar(response_buffer + 8, backend);
 
-                memcpy(response_buffer, &backend->server_up_time, 4);
-                memcpy(response_buffer + 4, &command, 4);
-                memcpy(response_buffer + 8, data, 4);
+                    memcpy(response_buffer, &backend->server_up_time, 4);
+                    memcpy(response_buffer + 4, &command, 4);
 
-                if(!big_endian()){
-                    reverse_bytes(response_buffer);
-                    reverse_bytes(response_buffer + 4);
-                    reverse_bytes(response_buffer + 8);
+                    if(!big_endian()){
+                        reverse_bytes(response_buffer);
+                        reverse_bytes(response_buffer + 4);
+                    }
+
+                }
+                else{
+
+                    handle_udp_get_request(command, data);
+                    response_buffer = malloc(12);
+                    buffer_size = 12;
+
+                    memcpy(response_buffer, &backend->server_up_time, 4);
+                    memcpy(response_buffer + 4, &command, 4);
+                    memcpy(response_buffer + 8, data, 4);
+
+                    if(!big_endian()){
+                        reverse_bytes(response_buffer);
+                        reverse_bytes(response_buffer + 4);
+                        reverse_bytes(response_buffer + 8);
+                    }
                 }
 
-                sendto(udp_socket, response_buffer, sizeof(response_buffer), 0, (struct sockaddr*)&client->udp_addr, client->address_length);
+                int bytes_sent = sendto(udp_socket, response_buffer, buffer_size, 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
                 printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
+                printf("Bytes sent: %d\n", bytes_sent);
 
                 drop_udp_client(&udp_clients, client);
+                free(response_buffer);
 
             }
             //check if it's a POST request
@@ -412,9 +453,14 @@ int main(int argc, char* argv[])
         }
 
         // Tell Unreal to send new destination
+        if (backend->p_rover.switch_dest && !unreal){
+            printf("Trying to change destination but there's no Unreal address\n");
+            backend->p_rover.switch_dest = false;
+        }
+        
         if(backend->p_rover.switch_dest && unreal){
             
-            //backend->p_rover.switch_dest = false;
+            backend->p_rover.switch_dest = false;
             
             char buffer[12] = {0};
             unsigned int command = 2004;
@@ -625,22 +671,6 @@ void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsig
     memcpy(time, buffer, 4);
     memcpy(command, buffer + 4, 4);
     memcpy(data, buffer + 8, 4);
-}
-
-bool big_endian(){
-    unsigned int i = 1;
-    unsigned char temp[4];
-
-    memcpy(temp, &i, 4);
-
-    if(temp[0] == 1){
-        //System is little-endian
-        return false;
-    }
-    else{
-        //System is big-endian
-        return true;
-    }
 }
 
 /*

@@ -382,6 +382,16 @@
                                             ------
                                         </span>
                                     </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            
+                                        </span>
+                                    </div>
+                                    <div class="prDataContainer">
+                                        <span id="battery_level" class="prData">
+                                            
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="roomDataMainBodyContainer">
@@ -494,7 +504,7 @@
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
-                                            Coolant storage
+                                            Coolant tank
                                         </span>
                                     </div>
                                     <div class="prDataContainer">
@@ -577,16 +587,24 @@
                                 </div>
                             </div>
                             <div class="roomDataMainBodyContainer">
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="prData" style="color: gray;">
+                                    Destination Coordinates
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
                                     <div class="prNameContainer">
                                         <span class="prData">
-                                            Switch Destination
+                                            Switch destination
                                         </span>
                                     </div>
                                     <div class="prDataContainer">
-                                        <span id="switch_dest" class="prData">
-                                            ------
-                                        </span>
+                                        <form action="" method="post">
+                                            <input type="submit" id="switch_dest_button" value="" onChange="this.form.submit()" style="height: 2.0rem; width: 2.0rem; border-radius: 50%;"/>
+                                            <input type="hidden" name="pr_switch_dest" value="true" />
+                                        </form>
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
@@ -603,7 +621,7 @@
                             <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
                                     <div class="prNameContainer">
-                                        <span class="prData">
+                                        <span class="prData"> 
                                             Destination Y
                                         </span>
                                     </div>

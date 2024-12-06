@@ -2,15 +2,15 @@
 {
 	"dcu": {
 		"eva1": {
-			"batt": true,
+			"batt": false,
 			"oxy": false,
 			"comm": false,
 			"fan": false,
-			"pump": true,
+			"pump": false,
 			"co2": false
 		},
 		"eva2": {
-			"batt": true,
+			"batt": false,
 			"oxy": false,
 			"comm": false,
 			"fan": false,

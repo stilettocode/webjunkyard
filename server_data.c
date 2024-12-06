@@ -62,12 +62,7 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
 
         udp_get_telemetry(command, team_number, data);
     }
-    else if(command < 142){
-        printf("Getting Rover Telemetry.\n");
-
-        udp_get_rover_telemetry(command, data);
-    }
-    else if(command < 158){
+    else if(command < 119){
         printf("Getting EVA.\n");
         unsigned int team_number = 0;
         float fl;
@@ -76,6 +71,11 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
         printf("Team number: %u\n", team_number);
 
         udp_get_eva(command, team_number, data);
+    }
+    else if(command < 165){
+        printf("Getting Rover Telemetry.\n");
+
+        udp_get_rover_telemetry(command, data);
     }
     else{
         printf("Request not found.\n");
@@ -1919,6 +1919,11 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
         request_content += strlen("co2_scrubber=");
         printf("PR CO2 SCRUBBER: ");
     }
+    else if(strncmp(request_content, "switch_dest=", strlen("switch_dest=")) == 0){
+        update_var = &p_rover->switch_dest;
+        request_content += strlen("switch_dest=");
+        printf("PR SWITCH DESTINATION: ");
+    }
     else{
         return false;
     }
@@ -1946,33 +1951,65 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
 
     int random_seed = backend->server_up_time;
 
-    bool dcu_pump_is_open = backend->dcu.eva1_pump | backend->dcu.eva2_pump;
-    bool uia_water_supply_connected = backend->uia.eva1_water_supply | backend->uia.eva2_water_supply;
-    bool dcu_using_umbilical_power = backend->dcu.eva1_batt | backend->dcu.eva2_batt;
-    bool uia_power_supply_connected = backend->uia.eva1_power | backend->uia.eva2_power;
-    bool uia_oxy_connected = backend->uia.eva1_oxy | backend->uia.eva2_oxy;
+    bool dcu_pump_is_open_eva1 = backend->dcu.eva1_pump;
+    bool dcu_pump_is_open_eva2 = backend->dcu.eva2_pump;
+    
+    bool uia_water_supply_connected_eva1 = backend->uia.eva1_water_supply;
+    bool uia_water_supply_connected_eva2 = backend->uia.eva2_water_supply;
+
+    bool dcu_using_umbilical_power_eva1 = backend->dcu.eva1_batt;
+    bool dcu_using_umbilical_power_eva2 = backend->dcu.eva2_batt;
+
+    bool uia_power_supply_connected_eva1 = backend->uia.eva1_power;
+    bool uia_power_supply_connected_eva2 = backend->uia.eva2_power;
+
+    bool uia_oxy_connected_eva1 = backend->uia.eva1_oxy;
+    bool uia_oxy_connected_eva2 = backend->uia.eva2_oxy;
 
     // Drain resources from the PR
-    if(uia_power_supply_connected && dcu_using_umbilical_power){
+    // EVA1
+    if(uia_power_supply_connected_eva1 && dcu_using_umbilical_power_eva1){
 
-        if(dcu_pump_is_open){
-            // Fill EVA's coolant tank, drain PR's coolant tank 
-            if(uia_water_supply_connected){
-                p_rover->pr_coolant_storage -= (backend->uia.eva1_water_supply + backend->uia.eva2_water_supply) * PR_COOLANT_TANK_DRAIN_RATE;
+        // Fill EVA's coolant tank, drain PR's coolant tank 
+        if(dcu_pump_is_open_eva1){
+            if(uia_water_supply_connected_eva1){
+                p_rover->pr_coolant_storage -= PR_COOLANT_TANK_DRAIN_RATE;
                 if(p_rover->pr_coolant_storage < 0){
                     p_rover->pr_coolant_storage = 0;
                 }
             }
         }
-
         // Fill EVA's oxygen tank, drain PR's oxygen tank
-        if(uia_oxy_connected){
-            p_rover->oxygen_tank -= (backend->uia.eva1_oxy + backend->uia.eva2_oxy) * PR_OXYGEN_TANK_DRAIN_RATE;
+        if(uia_oxy_connected_eva1){
+            p_rover->oxygen_tank -= PR_OXYGEN_TANK_DRAIN_RATE;
             if(p_rover->oxygen_tank < 0){
                 p_rover->oxygen_tank = 0;
             }
         }
     }
+    // EVA2
+    if(uia_power_supply_connected_eva2 && dcu_using_umbilical_power_eva2){
+
+        // Fill EVA's coolant tank, drain PR's coolant tank 
+        if(dcu_pump_is_open_eva2){
+            if(uia_water_supply_connected_eva2){
+                p_rover->pr_coolant_storage -= PR_COOLANT_TANK_DRAIN_RATE;
+                if(p_rover->pr_coolant_storage < 0){
+                    p_rover->pr_coolant_storage = 0;
+                }
+            }
+        }
+        // Fill EVA's oxygen tank, drain PR's oxygen tank
+        if(uia_oxy_connected_eva2){
+            p_rover->oxygen_tank -= PR_OXYGEN_TANK_DRAIN_RATE;
+            if(p_rover->oxygen_tank < 0){
+                p_rover->oxygen_tank = 0;
+            }
+        }
+    }
+
+    float total_coolant_pressure = p_rover->pr_coolant_storage / 100.0f * p_rover->cabin_temperature / NOMINAL_CABIN_TEMPERATURE * NOMINAL_COOLANT_PRESSURE;
+    p_rover->pr_coolant_pressure = total_coolant_pressure;
 
     // In Sunlight
     if(p_rover->in_sunlight){
@@ -2015,7 +2052,7 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
     }
 
     //Fans
-    //p_rover->ac_fan_pri += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - p_rover->ac_fan_pri);
+    p_rover->ac_fan_pri += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - p_rover->ac_fan_pri);
 
     //printf("ac pri: %f\n", p_rover->ac_fan_pri);
 
@@ -2196,9 +2233,9 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
 }
 
 bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
-    int off_set = command - 103;
+    int off_set = command - 119;
 
-    if(off_set > 39){
+    if(off_set > 44){
         printf("Not yet implemented.\n");
         return false;
     }
@@ -2232,7 +2269,7 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
 
     cJSON* rover_telemetry = cJSON_GetObjectItemCaseSensitive(json, "pr_telemetry");
     cJSON* rover_item = rover_telemetry->child;
-
+    
     union {
         float val;
         unsigned char temp[4];
@@ -2261,7 +2298,7 @@ bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
 }
 
 bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* data){
-    int off_set = command - 142;
+    int off_set = command - 103;
 
     char start_path[50] = "public/json_data/teams/";
     char team[3] = "";
@@ -2439,18 +2476,21 @@ bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct 
     return true;
 }
 
-bool udp_post_rover_lidar(char* request, struct backend_data_t* backend, int received_bytes){
+void udp_post_rover_lidar(char* request, struct backend_data_t* backend, int received_bytes){
     char* lidar = request + 8;
 
     //printf("received bytes: %d\n", received_bytes);
     float firstOne = 0;
+    bool b_endian = big_endian();
     memcpy(&firstOne, request + 8, 4);
 
     backend->p_rover.lidar[0] = firstOne;
 
     int total_floats = (received_bytes - 8)/4;
     for(int i = 1; i < total_floats; i++){
-        reverse_bytes(lidar + 4*i);
+        if(!b_endian){
+            reverse_bytes(lidar + 4*i);
+        }
         memcpy(&backend->p_rover.lidar[i], lidar + 4*i, 4);
     }
 
@@ -2463,6 +2503,23 @@ bool udp_post_rover_lidar(char* request, struct backend_data_t* backend, int rec
 
     printf("first: %f\n", backend->p_rover.lidar[0]);
     */
+}
+
+void udp_get_rover_lidar(char* lidar, struct backend_data_t* backend){
+
+    //TODO
+    size_t lidar_size = sizeof(backend->p_rover.lidar)/sizeof(float);
+    bool b_endian = big_endian();
+
+    unsigned char temp[4];
+    for (int i = 0; i < lidar_size; i++){
+        
+        memcpy(temp, backend->p_rover.lidar + i, 4);
+        if(!b_endian){
+            reverse_bytes(temp);
+        }
+        memcpy(lidar + i*4, temp, 4);
+    }
 }
 
 // -------------------------- Update --------------------------------
@@ -2590,5 +2647,21 @@ void reverse_bytes(unsigned char* bytes){
         temp = bytes[i];
         bytes[i] = bytes[3 - i];
         bytes[3 - i] = temp;
+    }
+}
+
+bool big_endian(){
+    unsigned int i = 1;
+    unsigned char temp[4];
+
+    memcpy(temp, &i, 4);
+
+    if(temp[0] == 1){
+        //System is little-endian
+        return false;
+    }
+    else{
+        //System is big-endian
+        return true;
     }
 }
