@@ -60,16 +60,12 @@ int main(int argc, char* argv[])
 
     bool udp_only = false;
     bool protected_mode = false;
+    bool local = false;
 
     // Check for running in local host
     char hostname[16];
     char port[6] = "14141";
-    if(argc > 1 && strcmp(argv[1], "--local") == 0){
-        strcpy(hostname, "127.0.0.1");
-    } else {
-        get_ip_address(hostname);
-    }
-
+    
     for (int i = 0; i < argc; i++){
         if (strcmp(argv[i], "--auth") == 0){
             protected_mode = true;
@@ -77,6 +73,16 @@ int main(int argc, char* argv[])
         else if(strcmp(argv[i], "--udp") == 0){
             udp_only = true;
         }
+        else if(strcmp(argv[i], "--local") == 0){
+            local = true;
+        }
+    }
+
+    if(local){
+        strcpy(hostname, "127.0.0.1");
+    }
+    else{
+        get_ip_address(hostname);
     }
 
     char* whitelist[MAX_LINE_LENGHT];
@@ -214,11 +220,12 @@ int main(int argc, char* argv[])
                 unsigned char* response_buffer;
                 int buffer_size = 0;
 
-                if(command == 164){
+                //Send lidar
+                if(command == 165){
                     response_buffer = malloc(sizeof(backend->p_rover.lidar) + 8);
                     buffer_size = sizeof(backend->p_rover.lidar) + 8;
 
-                    udp_get_rover_lidar(response_buffer + 8, backend);
+                    udp_get_pr_lidar(response_buffer + 8, backend);
 
                     memcpy(response_buffer, &backend->server_up_time, 4);
                     memcpy(response_buffer + 4, &command, 4);
@@ -229,6 +236,7 @@ int main(int argc, char* argv[])
                     }
 
                 }
+                //Handle normal GET request
                 else{
 
                     handle_udp_get_request(command, data);
@@ -246,6 +254,7 @@ int main(int argc, char* argv[])
                     }
                 }
 
+                //Send response
                 int bytes_sent = sendto(udp_socket, response_buffer, buffer_size, 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
                 printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
@@ -263,7 +272,7 @@ int main(int argc, char* argv[])
 
                 drop_udp_client(&udp_clients, client);
             }
-
+            //Save address of Unreal
             else if (command == 3000){
 
                 unreal_addr = client->udp_addr;
@@ -287,12 +296,12 @@ int main(int argc, char* argv[])
             tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
         }
 
-        // Tell Unreal to send new destination
+        // Trying to send new destination but Unreal hasn't sent its address
         if (backend->p_rover.switch_dest && !unreal){
-            printf("Trying to change destination but there's no Unreal address\n");
+            printf("Trying to change destination but there's no Unreal address set.\n");
             backend->p_rover.switch_dest = false;
         }
-        
+        // Tell Unreal to send new destination
         if(backend->p_rover.switch_dest && unreal){
             
             backend->p_rover.switch_dest = false;

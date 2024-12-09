@@ -204,6 +204,46 @@
                             </div>
                             <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="fanPriSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="fanPriSwitch" name="pr_fan_pri" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_fan_pri" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Fan: primary
+                                        </span>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="dustWiperSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="dustWiperSwitch" name="pr_dust_wiper" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_dust_wiper" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Dust wiper
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             Throttle
@@ -508,7 +548,7 @@
                                         </span>
                                     </div>
                                     <div class="prDataContainer">
-                                        <span id="pr_coolant_storage" class="prData">
+                                        <span id="pr_coolant_tank" class="prData">
                                             ------
                                         </span>
                                     </div>

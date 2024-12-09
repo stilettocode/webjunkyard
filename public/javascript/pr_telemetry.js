@@ -2,59 +2,47 @@
 function loadPR_Telemetry(){
     $.getJSON("json_data/ROVER_TELEMETRY.json", function ( data ){
         if(data.pr_telemetry.ac_heating == true){
-            //document.getElementById("ac_heating").innerText = "ON";
             document.getElementById("acHeatingSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("acHeatingSwitch").checked = true;
         }
         else{
-            //document.getElementById("ac_heating").innerText = "OFF";
             document.getElementById("acHeatingSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
             document.getElementById("acHeatingSwitch").checked = false;
         } 
 
         if(data.pr_telemetry.ac_cooling == true){
-            //document.getElementById("ac_cooling").innerText = "ON";
             document.getElementById("acCoolingSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("acCoolingSwitch").checked = true;
 
         }
         else{
-            //document.getElementById("ac_cooling").innerText = "OFF";
             document.getElementById("acCoolingSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
             document.getElementById("acCoolingSwitch").checked = false;
         }
         
         if(data.pr_telemetry.lights_on == true){
-            //document.getElementById("external_lights").innerText = "ON";
-            //document.getElementById("internal_lights").innerText = "ON";
             document.getElementById("lightsOnSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("lightsOnSwitch").checked = true;
         }
         else{
-            //document.getElementById("internal_lights").innerText = "OFF";
-            //document.getElementById("external_lights").innerText = "OFF";
             document.getElementById("lightsOnSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
             document.getElementById("lightsOnSwitch").checked = false;
         } 
 
         if(data.pr_telemetry.breaks == true){
-            //document.getElementById("breaks").innerText = "ON";
             document.getElementById("breaksSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("breaksSwitch").checked = true;
         }
         else{
-            //document.getElementById("breaks").innerText = "OFF";
             document.getElementById("breaksSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
             document.getElementById("breaksSwitch").checked = false;
         } 
 
         if(data.pr_telemetry.in_sunlight == true){
-            //document.getElementById("in_sunlight").innerText = "True";
             document.getElementById("inSunlightSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("inSunlightSwitch").checked = true;
         }
         else{
-            //document.getElementById("in_sunlight").innerText = "False";
             document.getElementById("inSunlightSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
             document.getElementById("inSunlightSwitch").checked = false;
         }
@@ -66,6 +54,24 @@ function loadPR_Telemetry(){
         else{
             document.getElementById("co2ScrubberSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
             document.getElementById("co2ScrubberSwitch").checked = false;
+        }
+
+        if(data.pr_telemetry.dust_wiper == true){
+            document.getElementById("dustWiperSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
+            document.getElementById("dustWiperSwitch").checked = true;
+        }
+        else{
+            document.getElementById("dustWiperSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
+            document.getElementById("dustWiperSwitch").checked = false;
+        }
+
+        if(data.pr_telemetry.fan_pri == true){
+            document.getElementById("fanPriSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
+            document.getElementById("fanPriSwitch").checked = true;
+        }
+        else{
+            document.getElementById("fanPriSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
+            document.getElementById("fanPriSwitch").checked = false;
         }
 
         let throttle = data.pr_telemetry.throttle;
@@ -101,13 +107,10 @@ function loadPR_Telemetry(){
 
         let motor_power_consumption = ((total_battery_capacity * data.pr_telemetry.motor_power_consumption / 100) / 1000) * 3600;
 
-        //let internal_lights = data.pr_telemetry.internal_lights;
-        //let external_lights = data.pr_telemetry.external_lights;
-
         let external_temp = data.pr_telemetry.external_temp;
         let coolant_level = data.pr_telemetry.pr_coolant_level;
         let coolant_pressure = data.pr_telemetry.pr_coolant_pressure;
-        let coolant_storage = data.pr_telemetry.pr_coolant_storage;
+        let coolant_tank = data.pr_telemetry.pr_coolant_tank;
         let terrain_condition = data.pr_telemetry.terrain_condition;
         let mission_elapsed_time = data.pr_telemetry.mission_elapsed_time;
         let mission_planned_time = data.pr_telemetry.mission_planned_time;
@@ -134,7 +137,7 @@ function loadPR_Telemetry(){
         document.getElementById("speed").innerText = speed.toFixed(2) + " m/s";
         document.getElementById("surface_incline").innerText = surface_incline.toFixed(2) + " rads";
 
-        document.getElementById("oxygen_levels").innerText = oxygen_levels.toFixed(2);
+        document.getElementById("oxygen_levels").innerText = oxygen_levels.toFixed(2) + " %";
         document.getElementById("oxygen_tank").innerText = oxygen_tank.toFixed(2) + " %";
         document.getElementById("solar_panel_dust_accum").innerText = solar_panel_dust_accum.toFixed(2);
         document.getElementById("battery_level").innerText = battery_level.toFixed(2) + " %";
@@ -149,7 +152,7 @@ function loadPR_Telemetry(){
         document.getElementById("external_temp").innerText = external_temp.toFixed(2) + " °C";
         document.getElementById("pr_coolant_level").innerText = coolant_level.toFixed(2) + " %";
         document.getElementById("pr_coolant_pressure").innerText = coolant_pressure.toFixed(2) + " psi";
-        document.getElementById("pr_coolant_storage").innerText = coolant_storage.toFixed(2) + " %";
+        document.getElementById("pr_coolant_tank").innerText = coolant_tank.toFixed(2) + " %";
         document.getElementById("motor_power_consumption").innerText = motor_power_consumption.toFixed(2) + " kWh";
         document.getElementById("terrain_condition").innerText = terrain_condition.toFixed(2);
         document.getElementById("mission_elapsed_time").innerText = mission_elapsed_time.toFixed(2);

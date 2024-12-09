@@ -75,7 +75,7 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
     else if(command < 165){
         printf("Getting Rover Telemetry.\n");
 
-        udp_get_rover_telemetry(command, data);
+        udp_get_pr_telemetry(command, data);
     }
     else{
         printf("Request not found.\n");
@@ -183,6 +183,8 @@ struct backend_data_t* init_backend(){
         reset_telemetry(&(backend->evas[i].eva2), 1000.0f);
     }
 
+    reset_pr_telemetry(backend);
+
     // reset Json files
     build_json_uia(&backend->uia);
     build_json_dcu(&backend->dcu);
@@ -197,22 +199,26 @@ struct backend_data_t* init_backend(){
         build_json_telemetry(&backend->evas[i], i, false);
     }
 
-    backend->p_rover.battery_level = 100;
-    backend->p_rover.oxygen_tank = 100;
-    backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
-    backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
-    backend->pr_sim.object_temp = NOMINAL_CABIN_TEMPERATURE;
-    backend->p_rover.cabin_pressure = NOMINAL_CABIN_PRESSURE;
-    backend->p_rover.pr_coolant_level = NOMINAL_COOLANT_LEVEL;
-    backend->p_rover.pr_coolant_storage = NOMINAL_COOLANT_STORAGE;
-    backend->p_rover.pr_coolant_pressure = NOMINAL_COOLANT_PRESSURE;
-
     return backend;
 }
 
 void cleanup_backend(struct backend_data_t*  backend){
 
     free(backend);
+}
+
+void reset_pr_telemetry(struct backend_data_t* backend){
+
+    backend->p_rover.battery_level = 100;
+    backend->p_rover.oxygen_tank = 100;
+    backend->p_rover.fan_pri = true;
+    backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
+    backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
+    backend->pr_sim.object_temp = NOMINAL_CABIN_TEMPERATURE;
+    backend->p_rover.cabin_pressure = NOMINAL_CABIN_PRESSURE;
+    backend->p_rover.pr_coolant_level = NOMINAL_COOLANT_LEVEL;
+    backend->p_rover.pr_coolant_tank = NOMINAL_COOLANT_TANK;
+    backend->p_rover.pr_coolant_pressure = NOMINAL_COOLANT_PRESSURE;
 }
 
 void reset_telemetry(struct telemetry_data_t* telemetry, float seed){
@@ -1575,7 +1581,6 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "distance_traveled", cJSON_CreateNumber(rover->distance_traveled));
     cJSON_AddItemToObject(pr_telemetry, "speed", cJSON_CreateNumber(rover->speed));
     cJSON_AddItemToObject(pr_telemetry, "surface_incline", cJSON_CreateNumber(rover->surface_incline));
-    //cJSON_AddItemToObject(pr_telemetry, "lidar", cJSON_CreateArray());
     cJSON_AddItemToObject(pr_telemetry, "oxygen_tank", cJSON_CreateNumber(rover->oxygen_tank));
     cJSON_AddItemToObject(pr_telemetry, "oxygen_pressure", cJSON_CreateNumber(rover->oxygen_pressure));
     cJSON_AddItemToObject(pr_telemetry, "oxygen_levels", cJSON_CreateNumber(rover->oxygen_levels));
@@ -1590,7 +1595,7 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "external_temp", cJSON_CreateNumber(rover->external_temp));
     cJSON_AddItemToObject(pr_telemetry, "pr_coolant_level", cJSON_CreateNumber(rover->pr_coolant_level));
     cJSON_AddItemToObject(pr_telemetry, "pr_coolant_pressure", cJSON_CreateNumber(rover->pr_coolant_pressure));
-    cJSON_AddItemToObject(pr_telemetry, "pr_coolant_storage", cJSON_CreateNumber(rover->pr_coolant_storage));
+    cJSON_AddItemToObject(pr_telemetry, "pr_coolant_tank", cJSON_CreateNumber(rover->pr_coolant_tank));
     cJSON_AddItemToObject(pr_telemetry, "radiator", cJSON_CreateNumber(rover->radiator));
     cJSON_AddItemToObject(pr_telemetry, "motor_power_consumption", cJSON_CreateNumber(rover->motor_power_consumption));
     cJSON_AddItemToObject(pr_telemetry, "terrain_condition", cJSON_CreateNumber(rover->terrain_condition));
@@ -1603,7 +1608,14 @@ bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "dest_x", cJSON_CreateNumber(rover->dest_x));
     cJSON_AddItemToObject(pr_telemetry, "dest_y", cJSON_CreateNumber(rover->dest_y));
     cJSON_AddItemToObject(pr_telemetry, "dest_z", cJSON_CreateNumber(rover->dest_z));
+    cJSON_AddItemToObject(pr_telemetry, "dust_wiper", cJSON_CreateBool(rover->dust_wiper));
+    
+    cJSON* lidar = cJSON_CreateArray();
 
+    for (int i = 0; i < MAX_LIDAR_SIZE; i++){
+        cJSON_AddItemToArray(lidar, cJSON_CreateNumber(rover->lidar[i]));
+    }
+    cJSON_AddItemToObject(pr_telemetry, "lidar", lidar);    
 
     char* json_str = cJSON_Print(json);
 
@@ -1924,6 +1936,16 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
         request_content += strlen("switch_dest=");
         printf("PR SWITCH DESTINATION: ");
     }
+    else if(strncmp(request_content, "dust_wiper=", strlen("dust_wiper=")) == 0){
+        update_var = &p_rover->dust_wiper;
+        request_content += strlen("dust_wiper=");
+        printf("PR DUST WIPER: ");
+    }
+    else if(strncmp(request_content, "fan_pri=", strlen("fan_pri=")) == 0){
+        update_var = &p_rover->fan_pri;
+        request_content += strlen("fan_pri=");
+        printf("PR FAN PRI: ");
+    }
     else{
         return false;
     }
@@ -1973,9 +1995,9 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
         // Fill EVA's coolant tank, drain PR's coolant tank 
         if(dcu_pump_is_open_eva1){
             if(uia_water_supply_connected_eva1){
-                p_rover->pr_coolant_storage -= PR_COOLANT_TANK_DRAIN_RATE;
-                if(p_rover->pr_coolant_storage < 0){
-                    p_rover->pr_coolant_storage = 0;
+                p_rover->pr_coolant_tank -= PR_COOLANT_TANK_DRAIN_RATE;
+                if(p_rover->pr_coolant_tank < 0){
+                    p_rover->pr_coolant_tank = 0;
                 }
             }
         }
@@ -1993,9 +2015,9 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
         // Fill EVA's coolant tank, drain PR's coolant tank 
         if(dcu_pump_is_open_eva2){
             if(uia_water_supply_connected_eva2){
-                p_rover->pr_coolant_storage -= PR_COOLANT_TANK_DRAIN_RATE;
-                if(p_rover->pr_coolant_storage < 0){
-                    p_rover->pr_coolant_storage = 0;
+                p_rover->pr_coolant_tank -= PR_COOLANT_TANK_DRAIN_RATE;
+                if(p_rover->pr_coolant_tank < 0){
+                    p_rover->pr_coolant_tank = 0;
                 }
             }
         }
@@ -2008,7 +2030,28 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
         }
     }
 
-    float total_coolant_pressure = p_rover->pr_coolant_storage / 100.0f * p_rover->cabin_temperature / NOMINAL_CABIN_TEMPERATURE * NOMINAL_COOLANT_PRESSURE;
+    //Oxygen levels
+    p_rover->oxygen_levels = randomized_sine_value(random_seed, 21.0f, 1.0f, 120.0f, 1000.0f);
+
+    //Dust accumulation
+    p_rover->solar_panel_dust_accum += PANEL_DUST_ACCUM_RATE;
+
+    if(p_rover->solar_panel_dust_accum > 100){
+        p_rover->solar_panel_dust_accum = 100;
+    }
+
+    if(p_rover->dust_wiper){
+        p_rover->solar_panel_dust_accum -= PANEL_DUST_WIPER_CLEAN_RATE;
+        if(p_rover->solar_panel_dust_accum < 0){
+            p_rover->solar_panel_dust_accum = 0;
+        }
+    }
+
+    //Passive Oxygen drain
+    p_rover->oxygen_tank -= PR_PASSIVE_OXYGEN_DRAIN;
+
+    //Coolant pressure
+    float total_coolant_pressure = p_rover->pr_coolant_tank / 100.0f * p_rover->cabin_temperature / NOMINAL_CABIN_TEMPERATURE * NOMINAL_COOLANT_PRESSURE;
     p_rover->pr_coolant_pressure = total_coolant_pressure;
 
     // In Sunlight
@@ -2018,6 +2061,8 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
     else{
         p_rover->solar_panel_efficiency = 0;
     }
+    // Dust wiper
+    float dust_wiper_rate = p_rover->dust_wiper * PANEL_DUST_WIPER_CONSUMPTION_RATE;
 
     // Internal/External Lights
     float external_light_rate = p_rover->lights_on * EXTERNAL_LIGHTS_CONSUMPTION_RATE;
@@ -2040,7 +2085,7 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
     p_rover->motor_power_consumption = throttle * THROTTLE_CONSUMPTION_RATE;
 
     //Battery consumption
-    p_rover->power_consumption_rate = p_rover->motor_power_consumption + total_ac_rate 
+    p_rover->power_consumption_rate = p_rover->motor_power_consumption + total_ac_rate + dust_wiper_rate
         + total_light_consumption + co2_scrubber_rate - p_rover->solar_panel_efficiency * SOLAR_PANEL_RECHARGE_RATE;
     p_rover->battery_level -= p_rover->power_consumption_rate;
 
@@ -2052,7 +2097,14 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
     }
 
     //Fans
-    p_rover->ac_fan_pri += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - p_rover->ac_fan_pri);
+    if(p_rover->fan_pri){
+        p_rover->ac_fan_pri += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - p_rover->ac_fan_pri);
+        p_rover->ac_fan_sec -= randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * (p_rover->ac_fan_sec);
+    }
+    else{
+        p_rover->ac_fan_pri -= randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * (p_rover->ac_fan_pri);
+        p_rover->ac_fan_sec += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - p_rover->ac_fan_sec);
+    }
 
     //printf("ac pri: %f\n", p_rover->ac_fan_pri);
 
@@ -2232,10 +2284,10 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
     return true;
 }
 
-bool udp_get_rover_telemetry(unsigned int command, unsigned char* data){
+bool udp_get_pr_telemetry(unsigned int command, unsigned char* data){
     int off_set = command - 119;
 
-    if(off_set > 44){
+    if(off_set > 45){
         printf("Not yet implemented.\n");
         return false;
     }
@@ -2458,14 +2510,14 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 1103;
 
-    if(off_set > 22){
+    if(off_set > 23){
         printf("Command not valid.\n");
         return false;
     }
 
     char* p_rover = (char*)&(backend->p_rover);
 
-    //access PR elemnts by index
+    //access PR elements by index
     p_rover += rover_index(off_set);
 
     float val;
@@ -2506,9 +2558,8 @@ void udp_post_rover_lidar(char* request, struct backend_data_t* backend, int rec
     
 }
 
-void udp_get_rover_lidar(char* lidar, struct backend_data_t* backend){
+void udp_get_pr_lidar(char* lidar, struct backend_data_t* backend){
 
-    //TODO
     size_t lidar_size = sizeof(backend->p_rover.lidar)/sizeof(float);
     bool b_endian = big_endian();
 
@@ -2635,7 +2686,8 @@ size_t rover_index(int idx){
         offsetof(struct pr_data_t, dest_y),
         offsetof(struct pr_data_t, dest_z),
         offsetof(struct pr_data_t, fan_pri),
-        offsetof(struct pr_data_t, internal_lights_on)
+        offsetof(struct pr_data_t, internal_lights_on),
+        offsetof(struct pr_data_t, dust_wiper)
     };
 
     return offsets[idx];

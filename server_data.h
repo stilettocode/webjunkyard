@@ -43,24 +43,30 @@
 #define SUIT_COOLANT_NOMINAL_TEMP 65.0f
 #define SUIT_COOLANT_NOMINAL_PRESSURE 500.0f
 
-// Pressurized Rover Values (Power consumption rates are in battery percentage per second consumed)
+//////////////////////////////////////////////////////////////// Pressurized Rover Values ////////////////////////////////////////////////////////////////////////////////////////
+
 #define MAX_LIDAR_SIZE 2000
 
-#define THROTTLE_CONSUMPTION_RATE 0.1f
+// (Power consumption rates are in battery percentage per second consumed)
+
+#define THROTTLE_CONSUMPTION_RATE 0.01f
 #define THROTTLE_MAX_ABS_VALUE 100.0f
 
 #define MAX_SOLAR_PANEL_DUST_ACCUM 100.0f
+#define PANEL_DUST_ACCUM_RATE 0.01f
+#define PANEL_DUST_WIPER_CONSUMPTION_RATE 0.001f
+#define PANEL_DUST_WIPER_CLEAN_RATE 10.0f
 #define SOLAR_PANEL_RECHARGE_RATE 0.1f
 
-#define EXTERNAL_LIGHTS_CONSUMPTION_RATE 0.01f
-#define INTERNAL_LIGHTS_CONSUMPTION_RATE 0.005f
+#define EXTERNAL_LIGHTS_CONSUMPTION_RATE 0.001f
+#define INTERNAL_LIGHTS_CONSUMPTION_RATE 0.0005f
 
-#define CO2_SCRUBBER_CONSUMPTION_RATE 0.01f
+#define CO2_SCRUBBER_CONSUMPTION_RATE 0.001f
 
-#define AC_COOLING_CONSUMPTION_RATE 0.05f
-#define AC_HEATING_CONSUMPTION_RATE 0.05f
+#define AC_COOLING_CONSUMPTION_RATE 0.005f
+#define AC_HEATING_CONSUMPTION_RATE 0.005f
 
-//Cooling/heating rates modify k value in Newton's cooling law formula
+// Temperature values (Cooling/heating rates modify k value in Newton's cooling law formula)
 #define E 2.718281828f
 
 #define MOON_HIGH_TEMP_RATE -0.1f
@@ -68,29 +74,30 @@
 #define MOON_LOW_TEMP_RATE -0.1f
 #define MOON_LOW_TEMPERATURE -133.0f
 
-#define CABIN_HIGH_RATE -0.0005f
+#define CABIN_HIGH_RATE -0.00005f
 #define CABIN_HIGH_TEMPERATURE 121.0f
-#define CABIN_LOW_RATE -0.0005f
+#define CABIN_LOW_RATE -0.00005f
 #define CABIN_LOW_TEMPERATURE -133.0f
 
-#define CABIN_COOLING_RATE -0.04f
+#define CABIN_COOLING_RATE -0.004f
 #define CABIN_COOLING_TEMP 21.0f // Cooling target temperature
-#define CABIN_HEATING_RATE -0.04f
-#define CABIN_HEATING_TEMP 23.0F // Heating target temperature
+#define CABIN_HEATING_RATE -0.004f
+#define CABIN_HEATING_TEMP 23.0f // Heating target temperature
 
 #define NOMINAL_CABIN_TEMPERATURE 22.0f
-
 #define NOMINAL_CABIN_PRESSURE 4.0f
-#define CABIN_TEMPERATURE_HEATING_RATE 2.0f
-#define CABIN_TEMPERATURE_COOLING_RATE 2.0f
 
 #define NOMINAL_COOLANT_LEVEL 100.0f
-#define NOMINAL_COOLANT_STORAGE 100.0f
+#define NOMINAL_COOLANT_TANK 100.0f
 #define NOMINAL_COOLANT_PRESSURE 500.0f
 
 //Coolant and Oxygen rates
+#define PR_PASSIVE_OXYGEN_DRAIN 0.0001f
+
 #define PR_COOLANT_TANK_DRAIN_RATE 0.05f
+#define PR_COOLANT_MIN_PRESSURE 10.0f
 #define PR_OXYGEN_TANK_DRAIN_RATE 0.05f
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
@@ -255,13 +262,14 @@ struct pr_data_t {
     float external_temp;
     float pr_coolant_level;
     float pr_coolant_pressure;
-    float pr_coolant_storage;
+    float pr_coolant_tank;
     float radiator;
 
     // Propulsion
     float motor_power_consumption;
 
     // Environmental
+    bool dust_wiper;
     float terrain_condition;
     float solar_panel_dust_accum;
 
@@ -367,6 +375,7 @@ struct backend_data_t {
 struct backend_data_t* init_backend();
 void cleanup_backend(struct backend_data_t*  backend);
 void reset_telemetry(struct telemetry_data_t* telemetry, float seed);
+void reset_pr_telemetry(struct backend_data_t* backend);
 
 // build json files when values update
 bool build_json_meta_data(struct backend_data_t* backend);
@@ -413,10 +422,10 @@ bool udp_get_rover(unsigned int command, unsigned char* data);
 bool udp_get_comm(unsigned char* data);
 bool udp_get_teams(unsigned char* request_content);
 bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data);
-bool udp_get_rover_telemetry(unsigned int command, unsigned char* data);
+bool udp_get_pr_telemetry(unsigned int command, unsigned char* data);
 bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* data);
 void handle_udp_get_request(unsigned int command, unsigned char* data);
-void udp_get_rover_lidar(char* lidar, struct backend_data_t* backend);
+void udp_get_pr_lidar(char* lidar, struct backend_data_t* backend);
 
 // UDP POST functions
 bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend);
