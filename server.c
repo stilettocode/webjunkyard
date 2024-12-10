@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
     char port[6] = "14141";
     
     for (int i = 0; i < argc; i++){
-        if (strcmp(argv[i], "--auth") == 0){
+        if (strcmp(argv[i], "--protected") == 0){
             protected_mode = true;
         }
         else if(strcmp(argv[i], "--udp") == 0){

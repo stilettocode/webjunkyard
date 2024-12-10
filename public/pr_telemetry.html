@@ -183,21 +183,21 @@
                                         </span>
                                     </div>
                                     <div class="uiaStateSensorContainer">
-                                        <div id="inSunlightSensor" class="uiaStateSensor">
+                                        <div id="internalLightsSensor" class="uiaStateSensor">
                                         </div>
                                     </div>
                                     <div class="uiaStateSensorContainer">
                                         <form action="" method="post">
                                             <label class="switch">
-                                                <input type="checkbox" id="inSunlightSwitch" name="pr_in_sunlight" value="true" onChange="this.form.submit()">
+                                                <input type="checkbox" id="internalLightsSwitch" name="pr_internal_lights_on" value="true" onChange="this.form.submit()">
                                                 <span class="slider round"></span>
-                                                <input type='hidden' name="pr_in_sunlight" value="false">
+                                                <input type='hidden' name="pr_internal_lights_on" value="false">
                                             </label>
                                         </form>
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
-                                            In sunlight
+                                            Internal lights on
                                         </span>
                                     </div>
                                 </div>
@@ -240,6 +240,51 @@
                                             Dust wiper
                                         </span>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="roomDataMainBodySubContainer">
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="inSunlightSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="inSunlightSwitch" name="pr_in_sunlight" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_in_sunlight" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            In sunlight
+                                        </span>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="inSunlightSensor" class="uiaStateSensor" hidden>
+                                        </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post" hidden>
+                                            <label class="switch">
+                                                <input type="checkbox" id="inSunlightSwitch" name="pr_in_sunlight" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_in_sunlight" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData" hidden>
+                                            In sunlight
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="roomDataMainBodyContainer">
+                                <div class="prData" style="color: gray;">
+                                    Telemtry values
                                 </div>
                             </div>
                             <div class="roomDataMainBodyContainer">
@@ -424,12 +469,12 @@
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">
-                                            
+                                            Oxygen pressure
                                         </span>
                                     </div>
                                     <div class="prDataContainer">
-                                        <span id="battery_level" class="prData">
-                                            
+                                        <span id="oxygen_pressure" class="prData">
+                                            ------
                                         </span>
                                     </div>
                                 </div>
@@ -642,7 +687,7 @@
                                     </div>
                                     <div class="prDataContainer">
                                         <form action="" method="post">
-                                            <input type="submit" id="switch_dest_button" value="" onChange="this.form.submit()" style="height: 2.0rem; width: 2.0rem; border-radius: 50%;"/>
+                                            <input type="submit" id="switch_dest_button" value="" onChange="this.form.submit()" class="prButton"/>
                                             <input type="hidden" name="pr_switch_dest" value="true" />
                                         </form>
                                     </div>

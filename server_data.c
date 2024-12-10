@@ -92,11 +92,11 @@ void handle_udp_post_request(unsigned int command, char* data, char* request, st
 
         if(command == 1130){
             printf("Posting PR Lidar,\n");
-            udp_post_rover_lidar(request, backend, received_bytes);
+            udp_post_pr_lidar(request, backend, received_bytes);
         }
         else{
             printf("Posting PR Telemetry.\n");
-            udp_post_rover_telemetry(command, data, backend);
+            udp_post_pr_telemetry(command, data, backend);
         }
     }
     else{
@@ -192,7 +192,7 @@ struct backend_data_t* init_backend(){
     build_json_rover(&backend->rover);
     build_json_spec(&backend->spec);
     build_json_comm(&backend->comm);
-    build_json_rover_telemetry(&backend->p_rover, false);
+    build_json_pr_telemetry(&backend->p_rover, false);
 
     for(int i = 0; i < NUMBER_OF_TEAMS; i++){
         build_json_eva(&backend->evas[i], i, false);
@@ -210,14 +210,14 @@ void cleanup_backend(struct backend_data_t*  backend){
 void reset_pr_telemetry(struct backend_data_t* backend){
 
     backend->p_rover.battery_level = 100;
-    backend->p_rover.oxygen_tank = 100;
+    backend->p_rover.oxygen_tank = PR_OXYGEN_TANK_CAP;
     backend->p_rover.fan_pri = true;
     backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
     backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
     backend->pr_sim.object_temp = NOMINAL_CABIN_TEMPERATURE;
     backend->p_rover.cabin_pressure = NOMINAL_CABIN_PRESSURE;
     backend->p_rover.pr_coolant_level = NOMINAL_COOLANT_LEVEL;
-    backend->p_rover.pr_coolant_tank = NOMINAL_COOLANT_TANK;
+    backend->p_rover.pr_coolant_tank = PR_COOLANT_TANK_CAP;
     backend->p_rover.pr_coolant_pressure = NOMINAL_COOLANT_PRESSURE;
 }
 
@@ -1556,7 +1556,7 @@ bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed
 
 }
 
-bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed){
+bool build_json_pr_telemetry(struct pr_data_t* rover, bool completed){
 
     cJSON* json = cJSON_CreateObject();
     cJSON_AddItemToObject(json, "pr_telemetry", cJSON_CreateObject());
@@ -1946,6 +1946,11 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
         request_content += strlen("fan_pri=");
         printf("PR FAN PRI: ");
     }
+    else if(strncmp(request_content, "internal_lights_on=", strlen("internal_lights_on=")) == 0){
+        update_var = &p_rover->internal_lights_on;
+        request_content += strlen("internal_lights_on=");
+        printf("PR INTERNAL LIGHTS: ");
+    }
     else{
         return false;
     }
@@ -1963,7 +1968,7 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
             return false;
         }
 
-        build_json_rover_telemetry(p_rover, false);
+        build_json_pr_telemetry(p_rover, false);
     }
 
     return true;
@@ -2030,16 +2035,24 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
         }
     }
 
+    //telemetry->temperature = randomized_sine_value(x, 75.0f, 20.0f, 350.0f, 1.5f);
     //Oxygen levels
-    p_rover->oxygen_levels = randomized_sine_value(random_seed, 21.0f, 1.0f, 120.0f, 1000.0f);
+    p_rover->oxygen_levels = randomized_sine_value((float)random_seed, 21.0f, 1.0f, 350.0f, 0.5f);
+
+    //Oxygen pressure
+    p_rover->oxygen_pressure = p_rover->oxygen_tank / PR_OXYGEN_TANK_CAP * PR_OXYGEN_PRESSURE_CAP;
+
+    //Passive Oxygen drain
+    p_rover->oxygen_tank -= PR_PASSIVE_OXYGEN_DRAIN;
 
     //Dust accumulation
-    p_rover->solar_panel_dust_accum += PANEL_DUST_ACCUM_RATE;
+    p_rover->solar_panel_dust_accum += randomized_sine_value((float)random_seed, 0.8f, 0.2f, 420.0f, 0.1f) * PANEL_DUST_ACCUM_RATE;
 
-    if(p_rover->solar_panel_dust_accum > 100){
-        p_rover->solar_panel_dust_accum = 100;
+    if(p_rover->solar_panel_dust_accum > MAX_SOLAR_PANEL_DUST_ACCUM){
+        p_rover->solar_panel_dust_accum = MAX_SOLAR_PANEL_DUST_ACCUM;
     }
 
+    //Dust wiper
     if(p_rover->dust_wiper){
         p_rover->solar_panel_dust_accum -= PANEL_DUST_WIPER_CLEAN_RATE;
         if(p_rover->solar_panel_dust_accum < 0){
@@ -2047,12 +2060,16 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
         }
     }
 
-    //Passive Oxygen drain
-    p_rover->oxygen_tank -= PR_PASSIVE_OXYGEN_DRAIN;
-
     //Coolant pressure
-    float total_coolant_pressure = p_rover->pr_coolant_tank / 100.0f * p_rover->cabin_temperature / NOMINAL_CABIN_TEMPERATURE * NOMINAL_COOLANT_PRESSURE;
+    float total_coolant_pressure = p_rover->pr_coolant_tank / PR_COOLANT_TANK_CAP * p_rover->cabin_temperature / NOMINAL_CABIN_TEMPERATURE * NOMINAL_COOLANT_PRESSURE;
     p_rover->pr_coolant_pressure = total_coolant_pressure;
+
+    //Coolant level
+    p_rover->pr_coolant_level = randomized_sine_value((float)random_seed, NOMINAL_COOLANT_LEVEL, 0.6f, 420.0f, 0.5f);
+    if(p_rover->pr_coolant_tank == 0){p_rover->pr_coolant_level = 0;}
+
+    //Passive coolant drain
+    p_rover->pr_coolant_tank -= PR_PASSIVE_COOLANT_DRAIN;
 
     // In Sunlight
     if(p_rover->in_sunlight){
@@ -2061,18 +2078,19 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
     else{
         p_rover->solar_panel_efficiency = 0;
     }
-    // Dust wiper
+
+    // Dust wiper consumption consumption rate
     float dust_wiper_rate = p_rover->dust_wiper * PANEL_DUST_WIPER_CONSUMPTION_RATE;
 
-    // Internal/External Lights
+    // Internal/External Lights consumption rate
     float external_light_rate = p_rover->lights_on * EXTERNAL_LIGHTS_CONSUMPTION_RATE;
     float internal_light_rate = p_rover->internal_lights_on * INTERNAL_LIGHTS_CONSUMPTION_RATE;
     float total_light_consumption = internal_light_rate + external_light_rate;
 
-    // CO2 Scrubber
+    // CO2 Scrubber consumption rate
     float co2_scrubber_rate = p_rover->co2_scrubber * CO2_SCRUBBER_CONSUMPTION_RATE;
 
-    // AC Cooling/Heating
+    // AC Cooling/Heating consumption rate
     float ac_cooling_rate = p_rover->ac_cooling * AC_COOLING_CONSUMPTION_RATE;
     float ac_heating_rate = p_rover->ac_heating * AC_HEATING_CONSUMPTION_RATE;
     float total_ac_rate = ac_cooling_rate + ac_heating_rate;
@@ -2086,7 +2104,7 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
 
     //Battery consumption
     p_rover->power_consumption_rate = p_rover->motor_power_consumption + total_ac_rate + dust_wiper_rate
-        + total_light_consumption + co2_scrubber_rate - p_rover->solar_panel_efficiency * SOLAR_PANEL_RECHARGE_RATE;
+        + total_light_consumption + co2_scrubber_rate + PASSIVE_POWER_CONSUMPTION_RATE - p_rover->solar_panel_efficiency * SOLAR_PANEL_RECHARGE_RATE;
     p_rover->battery_level -= p_rover->power_consumption_rate;
 
     if(p_rover->battery_level > 100){
@@ -2098,12 +2116,12 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
 
     //Fans
     if(p_rover->fan_pri){
-        p_rover->ac_fan_pri += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - p_rover->ac_fan_pri);
-        p_rover->ac_fan_sec -= randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * (p_rover->ac_fan_sec);
+        p_rover->ac_fan_pri += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * PR_FAN_SPIN_UP_RATE * ((PR_FAN_RPM + 1) - p_rover->ac_fan_pri);
+        p_rover->ac_fan_sec -= randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * PR_FAN_SPIN_UP_RATE * (p_rover->ac_fan_sec);
     }
     else{
-        p_rover->ac_fan_pri -= randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * (p_rover->ac_fan_pri);
-        p_rover->ac_fan_sec += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * SUIT_FAN_SPIN_UP_RATE * ((SUIT_FAN_RPM + 1) - p_rover->ac_fan_sec);
+        p_rover->ac_fan_pri -= randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * PR_FAN_SPIN_UP_RATE * (p_rover->ac_fan_pri);
+        p_rover->ac_fan_sec += randomized_sine_value(random_seed, 0.8f, 0.2f, 480.0f, 0.1f) * PR_FAN_SPIN_UP_RATE * ((PR_FAN_RPM + 1) - p_rover->ac_fan_sec);
     }
 
     //printf("ac pri: %f\n", p_rover->ac_fan_pri);
@@ -2133,7 +2151,7 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
     }
     else if(p_rover->in_sunlight && !p_rover->ac_cooling && p_rover->ac_heating){
         new_target_temp = CABIN_HIGH_TEMPERATURE;
-        k = CABIN_HIGH_RATE * 2;
+        k = CABIN_HIGH_RATE * 4;
     }
     else if(!p_rover->in_sunlight && !p_rover->ac_cooling && !p_rover->ac_heating){
         new_target_temp = CABIN_LOW_TEMPERATURE;
@@ -2141,11 +2159,11 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
     }
     else if(!p_rover->in_sunlight && p_rover->ac_cooling && p_rover->ac_heating){
         new_target_temp = CABIN_LOW_TEMPERATURE;
-        k = CABIN_LOW_RATE * 2;
+        k = CABIN_LOW_RATE;
     }
     else if(!p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
         new_target_temp = CABIN_LOW_TEMPERATURE;
-        k = CABIN_LOW_RATE;
+        k = CABIN_LOW_RATE * 4;
     }
     else if(p_rover->in_sunlight && p_rover->ac_cooling && !p_rover->ac_heating){
         new_target_temp = CABIN_COOLING_TEMP;
@@ -2156,10 +2174,11 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
         k = CABIN_HEATING_RATE;
     }
     
-    if (cabin_sim->target_temp != new_target_temp){
+    if (cabin_sim->target_temp != new_target_temp || cabin_sim->old_k != k){
         cabin_sim->start_time = server_time;
         cabin_sim->object_temp = p_rover->cabin_temperature;
         cabin_sim->target_temp = new_target_temp;
+        cabin_sim->old_k = k;
     }
 
     // Newton's cooling law
@@ -2507,7 +2526,7 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
     }
 }
 
-bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
+bool udp_post_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 1103;
 
     if(off_set > 23){
@@ -2528,7 +2547,7 @@ bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct 
     return true;
 }
 
-void udp_post_rover_lidar(char* request, struct backend_data_t* backend, int received_bytes){
+void udp_post_pr_lidar(char* request, struct backend_data_t* backend, int received_bytes){
     char* lidar = request + 8;
 
     //printf("received bytes: %d\n", received_bytes);
@@ -2656,7 +2675,7 @@ void simulate_backend(struct backend_data_t* backend){
         simulate_pr_telemetry(&backend->p_rover, backend->server_up_time, backend);
 
         // Update Pressurized Rover Telemetry (ROVER_TELEMETRY.json)
-        build_json_rover_telemetry(&backend->p_rover, false);
+        build_json_pr_telemetry(&backend->p_rover, false);
 
     }
 }

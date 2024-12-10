@@ -149,6 +149,26 @@
   white-space: nowrap;
 }
 
+.prButton {
+  background-color: white;
+  border-radius: 5rem;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.prButton:hover {
+  background-color: gray;
+  border-radius: 5rem;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.prButton:active {
+  background-color: greenyellow;
+  border-radius: 5rem;
+  height: 1.5rem;
+  width: 1.5rem;
+}
 /**************** UIA State CSS ****************/
 .uiaStateInfoContainer {
   width: 50%;

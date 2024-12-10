@@ -52,11 +52,13 @@
 #define THROTTLE_CONSUMPTION_RATE 0.01f
 #define THROTTLE_MAX_ABS_VALUE 100.0f
 
+#define PASSIVE_POWER_CONSUMPTION_RATE 0.0005f
+
 #define MAX_SOLAR_PANEL_DUST_ACCUM 100.0f
 #define PANEL_DUST_ACCUM_RATE 0.01f
 #define PANEL_DUST_WIPER_CONSUMPTION_RATE 0.001f
 #define PANEL_DUST_WIPER_CLEAN_RATE 10.0f
-#define SOLAR_PANEL_RECHARGE_RATE 0.1f
+#define SOLAR_PANEL_RECHARGE_RATE 0.01f
 
 #define EXTERNAL_LIGHTS_CONSUMPTION_RATE 0.001f
 #define INTERNAL_LIGHTS_CONSUMPTION_RATE 0.0005f
@@ -87,17 +89,27 @@
 #define NOMINAL_CABIN_TEMPERATURE 22.0f
 #define NOMINAL_CABIN_PRESSURE 4.0f
 
-#define NOMINAL_COOLANT_LEVEL 100.0f
+#define NOMINAL_COOLANT_LEVEL 44.5f
 #define NOMINAL_COOLANT_TANK 100.0f
 #define NOMINAL_COOLANT_PRESSURE 500.0f
 
-//Coolant and Oxygen rates
-#define PR_PASSIVE_OXYGEN_DRAIN 0.0001f
+//Coolant and Oxygen values/rates
 
+#define PR_COOLANT_TANK_CAP 100.0f
 #define PR_COOLANT_TANK_DRAIN_RATE 0.05f
-#define PR_COOLANT_MIN_PRESSURE 10.0f
-#define PR_OXYGEN_TANK_DRAIN_RATE 0.05f
+#define PR_PASSIVE_COOLANT_DRAIN 0.0001f
+#define PR_COOLANT_MIN_PRESSURE 0.0f
 
+#define PR_OXYGEN_TANK_DRAIN_RATE 0.05f
+#define PR_PASSIVE_OXYGEN_DRAIN 0.0001f
+#define PR_OXYGEN_PRESSURE_CAP 3000.0f
+#define PR_OXYGEN_TANK_CAP 100.0f
+
+//Fans
+#define PR_FAN_SPIN_UP_RATE 0.9f
+#define PR_FAN_RPM 30000.0f
+
+//
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
@@ -288,6 +300,7 @@ struct pr_data_t {
 
 struct pr_sim_data_t {
 
+    float old_k;
     float target_temp;
     float object_temp;
     uint32_t start_time;
@@ -388,7 +401,7 @@ bool build_json_comm     (struct comm_data_t* comm);
 bool build_json_error    (struct eva_failures_t* error);
 bool build_json_eva      (struct eva_data_t* eva, int team_index, bool completed);
 bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed);
-bool build_json_rover_telemetry(struct pr_data_t* rover, bool completed);
+bool build_json_pr_telemetry(struct pr_data_t* rover, bool completed);
 
 // Update locally stored variables
 bool update_uia      (char* request_content, struct uia_data_t* uia);
@@ -428,8 +441,8 @@ void handle_udp_get_request(unsigned int command, unsigned char* data);
 void udp_get_pr_lidar(char* lidar, struct backend_data_t* backend);
 
 // UDP POST functions
-bool udp_post_rover_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend);
-void udp_post_rover_lidar(char* request, struct backend_data_t* backend, int received_bytes);
+bool udp_post_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend);
+void udp_post_pr_lidar(char* request, struct backend_data_t* backend, int received_bytes);
 void handle_udp_post_request(unsigned int command, char* data, char* request, struct backend_data_t* backend, int received_bytes);
 
 //Helper functions

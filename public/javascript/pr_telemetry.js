@@ -29,6 +29,15 @@ function loadPR_Telemetry(){
             document.getElementById("lightsOnSwitch").checked = false;
         } 
 
+        if(data.pr_telemetry.internal_lights_on == true){
+            document.getElementById("internalLightsSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
+            document.getElementById("internalLightsSwitch").checked = true;
+        }
+        else{
+            document.getElementById("internalLightsSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
+            document.getElementById("internalLightsSwitch").checked = false;
+        } 
+
         if(data.pr_telemetry.breaks == true){
             document.getElementById("breaksSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("breaksSwitch").checked = true;
@@ -92,6 +101,7 @@ function loadPR_Telemetry(){
 
         let oxygen_levels = data.pr_telemetry.oxygen_levels;
         let oxygen_tank = data.pr_telemetry.oxygen_tank;
+        let oxygen_pressure = data.pr_telemetry.oxygen_pressure;
         let ac_fan_pri = data.pr_telemetry.ac_fan_pri;
         let ac_fan_sec = data.pr_telemetry.ac_fan_sec;
 
@@ -136,10 +146,10 @@ function loadPR_Telemetry(){
         document.getElementById("distance_traveled").innerText = distance_traveled.toFixed(2) + " m";
         document.getElementById("speed").innerText = speed.toFixed(2) + " m/s";
         document.getElementById("surface_incline").innerText = surface_incline.toFixed(2) + " rads";
-
+        document.getElementById("oxygen_pressure").innerText = oxygen_pressure.toFixed(2) + " psi";
         document.getElementById("oxygen_levels").innerText = oxygen_levels.toFixed(2) + " %";
         document.getElementById("oxygen_tank").innerText = oxygen_tank.toFixed(2) + " %";
-        document.getElementById("solar_panel_dust_accum").innerText = solar_panel_dust_accum.toFixed(2);
+        document.getElementById("solar_panel_dust_accum").innerText = solar_panel_dust_accum.toFixed(2) + " %";
         document.getElementById("battery_level").innerText = battery_level.toFixed(2) + " %";
         document.getElementById("ac_fan_pri").innerText = ac_fan_pri.toFixed(2) + " rpm";
         document.getElementById("ac_fan_sec").innerText = ac_fan_sec.toFixed(2) + " rpm";
@@ -147,10 +157,8 @@ function loadPR_Telemetry(){
         document.getElementById("cabin_temperature").innerText = cabin_temperature.toFixed(2) + " °C";
         document.getElementById("power_consumption_rate").innerText = power_consumption_rate.toFixed(2) + " kWh";
         document.getElementById("solar_panel_efficiency").innerText = solar_panel_efficiency.toFixed(2);
-        //document.getElementById("internal_lights").innerText = internal_lights;
-        //document.getElementById("external_lights").innerText = external_lights;
         document.getElementById("external_temp").innerText = external_temp.toFixed(2) + " °C";
-        document.getElementById("pr_coolant_level").innerText = coolant_level.toFixed(2) + " %";
+        document.getElementById("pr_coolant_level").innerText = coolant_level.toFixed(2) + " L";
         document.getElementById("pr_coolant_pressure").innerText = coolant_pressure.toFixed(2) + " psi";
         document.getElementById("pr_coolant_tank").innerText = coolant_tank.toFixed(2) + " %";
         document.getElementById("motor_power_consumption").innerText = motor_power_consumption.toFixed(2) + " kWh";
