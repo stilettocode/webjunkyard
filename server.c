@@ -304,6 +304,8 @@ int main(int argc, char* argv[])
         // Tell Unreal to send new destination
         if(backend->p_rover.switch_dest && unreal){
             
+            struct sockaddr_in unreal_change_dest_addr = unreal_addr;
+            unreal_change_dest_addr.sin_port = 10002;
             //backend->p_rover.switch_dest = false;
             
             char buffer[12] = {0};
@@ -320,7 +322,7 @@ int main(int argc, char* argv[])
                 reverse_bytes(buffer + 8);
             }
 
-            sendto(udp_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&unreal_addr, unreal_addr_len);
+            sendto(udp_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&unreal_change_dest_addr, sizeof(unreal_change_dest_addr));
             printf("Sent switch destination request to Unreal\n");
         }
 
