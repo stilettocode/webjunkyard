@@ -680,6 +680,7 @@
                             </div>
                             <div class="roomDataMainBodyContainer">
                                 <div class="roomDataMainBodySubContainer">
+                                    <!--
                                     <div class="prNameContainer">
                                         <span class="prData">
                                             Switch destination
@@ -690,6 +691,25 @@
                                             <input type="submit" id="switch_dest_button" value="" onChange="this.form.submit()" class="prButton"/>
                                             <input type="hidden" name="pr_switch_dest" value="true" />
                                         </form>
+                                    </div>
+                                    -->
+                                    <div class="uiaStateSensorContainer">
+                                        <div id="switchDestSensor" class="uiaStateSensor">
+                                        </div>
+                                    </div>
+                                    <div class="uiaStateSensorContainer">
+                                        <form action="" method="post">
+                                            <label class="switch">
+                                                <input type="checkbox" id="switchDestSwitch" name="pr_switch_dest" value="true" onChange="this.form.submit()">
+                                                <span class="slider round"></span>
+                                                <input type='hidden' name="pr_switch_dest" value="false">
+                                            </label>
+                                        </form>
+                                    </div>
+                                    <div class="prNameContainer">
+                                        <span class="prData">
+                                            Switch destination
+                                        </span>
                                     </div>
                                     <div class="prNameContainer">
                                         <span class="prData">

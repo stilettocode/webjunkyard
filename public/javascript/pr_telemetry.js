@@ -83,6 +83,15 @@ function loadPR_Telemetry(){
             document.getElementById("fanPriSwitch").checked = false;
         }
 
+        if(data.pr_telemetry.switch_dest == true){
+            document.getElementById("switchDestSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
+            document.getElementById("switchDestSwitch").checked = true;
+        }
+        else{
+            document.getElementById("switchDestSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
+            document.getElementById("switchDestSwitch").checked = false;
+        }
+
         let throttle = data.pr_telemetry.throttle;
         let steering = data.pr_telemetry.steering;
         let current_pos_x = data.pr_telemetry.current_pos_x;
