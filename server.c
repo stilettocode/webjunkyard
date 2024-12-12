@@ -23,6 +23,7 @@
 #define TSS_TO_UNREAL_LIGHTS_COMMAND 2001
 #define TSS_TO_UNREAL_STEERING_COMMAND 2002
 #define TSS_TO_UNREAL_THROTTLE_COMMAND 2003
+#define TSS_TO_UNREAL_SWITCH_DEST_COMMAND 2004
 
 // Uncomment this for extra print statements
 //#define VERBOSE_MODE 
@@ -42,6 +43,24 @@ void tss_to_unreal();
 //                               Main Functions
 ///////////////////////////////////////////////////////////////////////////////////
 
+enum { NS_PER_SECOND = 1000000000 };
+
+void sub_timespec(struct timespec t1, struct timespec t2, struct timespec *td)
+{
+    td->tv_nsec = t2.tv_nsec - t1.tv_nsec;
+    td->tv_sec  = t2.tv_sec - t1.tv_sec;
+    if (td->tv_sec > 0 && td->tv_nsec < 0)
+    {
+        td->tv_nsec += NS_PER_SECOND;
+        td->tv_sec--;
+    }
+    else if (td->tv_sec < 0 && td->tv_nsec > 0)
+    {
+        td->tv_nsec -= NS_PER_SECOND;
+        td->tv_sec++;
+    }
+}
+
 int main(int argc, char* argv[])
 {
     printf("Hello World\n\n");
@@ -57,10 +76,14 @@ int main(int argc, char* argv[])
     #endif
 
     // ----------------- Begin Main Program Space -------------------------
+    struct timespec time_begin, time_end, time_delta;
+
+    clock_gettime(CLOCK_REALTIME, &time_begin);
 
     bool udp_only = false;
     bool protected_mode = false;
     bool local = false;
+    unsigned int old_time = 0;
 
     // Check for running in local host
     char hostname[16];
@@ -293,37 +316,15 @@ int main(int argc, char* argv[])
 
         // Send telemetry values to Unreal if there's an address saved
         if(unreal){
-            tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
-        }
+            
+            clock_gettime(CLOCK_REALTIME, &time_end);
+            sub_timespec(time_begin, time_end, &time_delta);
 
-        // Trying to send new destination but Unreal hasn't sent its address
-        if (backend->p_rover.switch_dest && !unreal){
-            printf("Trying to change destination but there's no Unreal address set.\n");
-            backend->p_rover.switch_dest = false;
-        }
-        // Tell Unreal to send new destination
-        if(backend->p_rover.switch_dest && unreal){
-            
-            //struct sockaddr_in unreal_change_dest_addr = unreal_addr;
-            //unreal_change_dest_addr.sin_port = 10002;
-            //backend->p_rover.switch_dest = false;
-            
-            char buffer[12] = {0};
-            unsigned int command = 2004;
-            bool switch_dest = true;
-            
-            memcpy(buffer, &backend->server_up_time, 4);
-            memcpy(buffer + 4, &command, 4);
-            memcpy(buffer + 8, &switch_dest, 4);
-
-            if(!big_endian()){
-                reverse_bytes(buffer);
-                reverse_bytes(buffer + 4);
-                reverse_bytes(buffer + 8);
+            if(time_delta.tv_nsec > 200000000){
+                tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
+                
+                clock_gettime(CLOCK_REALTIME, &time_begin);
             }
-
-            sendto(udp_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&unreal_addr, unreal_addr_len);
-            printf("Sent switch destination request to Unreal\n");
         }
 
         // Server-Client Socket got a new message
@@ -522,62 +523,65 @@ void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsig
     memcpy(data, buffer + 8, 4);
 }
 
-/*
-void reverse_bytes(unsigned char* bytes){
-    //expects 4 bytes to be flipped
-    char temp;
-    for(int i = 0; i < 2; i++){
-        temp = bytes[i];
-        bytes[i] = bytes[3 - i];
-        bytes[3 - i] = temp;
-    }
-}
-*/
 void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct backend_data_t* backend){
 
     int breaks = backend->p_rover.breaks;
     int lights_on = backend->p_rover.lights_on;
     float steering = backend->p_rover.steering;
     float throttle = backend->p_rover.throttle;
+    int switch_dest = backend->p_rover.switch_dest;
 
     unsigned int time = backend->server_up_time;
     unsigned int command = TSS_TO_UNREAL_BREAKS_COMMAND;
     unsigned int command2 = TSS_TO_UNREAL_LIGHTS_COMMAND;
     unsigned int command3 = TSS_TO_UNREAL_STEERING_COMMAND;
     unsigned int command4 = TSS_TO_UNREAL_THROTTLE_COMMAND;
+    unsigned int command5 = TSS_TO_UNREAL_SWITCH_DEST_COMMAND;
 
     unsigned char buffer[12];
-
+    unsigned char buffer2[12];
+    unsigned char buffer3[12];
+    unsigned char buffer4[12];
+    unsigned char buffer5[12];
+    
     if(!big_endian()){
         reverse_bytes((unsigned char*)&time);
         reverse_bytes((unsigned char*)&command);
         reverse_bytes((unsigned char*)&command2);
         reverse_bytes((unsigned char*)&command3);
         reverse_bytes((unsigned char*)&command4);
-        reverse_bytes((unsigned char*)&breaks);
-        reverse_bytes((unsigned char*)&lights_on);
+        reverse_bytes((unsigned char*)&command5);
         reverse_bytes((unsigned char*)&steering);
         reverse_bytes((unsigned char*)&throttle);
     }
-
+    
     memcpy(buffer, &time, 4);
     memcpy(buffer + 4, &command, 4);
     memcpy(buffer + 8, &breaks, 4);
 
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 
-    memcpy(buffer + 4, &command2, 4);
-    memcpy(buffer + 8, &lights_on, 4);
+    memcpy(buffer2, &time, 4);
+    memcpy(buffer2 + 4, &command2, 4);
+    memcpy(buffer2 + 8, &lights_on, 4);
 
-    sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
+    sendto(socket, buffer2, sizeof(buffer2), 0, (struct sockaddr*)&address, len);
 
-    memcpy(buffer + 4, &command3, 4);
-    memcpy(buffer + 8, &steering, 4);
+    memcpy(buffer3, &time, 4);
+    memcpy(buffer3 + 4, &command3, 4);
+    memcpy(buffer3 + 8, &steering, 4);
 
-    sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
+    sendto(socket, buffer3, sizeof(buffer3), 0, (struct sockaddr*)&address, len);
 
-    memcpy(buffer + 4, &command4, 4);
-    memcpy(buffer + 8, &throttle, 4);
+    memcpy(buffer4, &time, 4);
+    memcpy(buffer4 + 4, &command4, 4);
+    memcpy(buffer4 + 8, &throttle, 4);
 
-    sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
+    sendto(socket, buffer4, sizeof(buffer4), 0, (struct sockaddr*)&address, len);
+
+    memcpy(buffer5, &time, 4);
+    memcpy(buffer5 + 4, &command5, 4);
+    memcpy(buffer5 + 8, &switch_dest, 4);
+
+    sendto(socket, buffer5, sizeof(buffer5), 0, (struct sockaddr*)&address, len);
 }
