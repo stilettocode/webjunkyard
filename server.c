@@ -19,7 +19,7 @@
 // Server Variables
 #define MAX_LINE_LENGHT 1024
 
-#define TSS_TO_UNREAL_BREAKS_COMMAND 2000
+#define TSS_TO_UNREAL_BRAKES_COMMAND 2000
 #define TSS_TO_UNREAL_LIGHTS_COMMAND 2001
 #define TSS_TO_UNREAL_STEERING_COMMAND 2002
 #define TSS_TO_UNREAL_THROTTLE_COMMAND 2003
@@ -27,7 +27,38 @@
 
 // Uncomment this for extra print statements
 //#define VERBOSE_MODE 
-#define TESTING_MODE
+//#define TESTING_MODE
+
+///////////////////////////////////////////////////////////////////////////////////
+//                          Windows Functions
+///////////////////////////////////////////////////////////////////////////////////
+
+
+#if defined(_WIN32)
+//This is from https://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows
+void unix_time(struct timespec *spec)
+{  __int64 wintime; GetSystemTimeAsFileTime((FILETIME*)&wintime); 
+   wintime -=w2ux;  spec->tv_sec  =wintime / exp7;                 
+                    spec->tv_nsec =wintime % exp7 *100;
+}
+int clock_gettime(int fake, struct timespec *spec)
+{  static  struct timespec startspec; static double ticks2nano;
+   static __int64 startticks, tps =0;    __int64 tmp, curticks;
+   QueryPerformanceFrequency((LARGE_INTEGER*)&tmp); //some strange system can
+   if (tps !=tmp) { tps =tmp; //init ~~ONCE         //possibly change freq ?
+                    QueryPerformanceCounter((LARGE_INTEGER*)&startticks);
+                    unix_time(&startspec); ticks2nano =(double)exp9 / tps; }
+   QueryPerformanceCounter((LARGE_INTEGER*)&curticks); curticks -=startticks;
+   spec->tv_sec  =startspec.tv_sec   +         (curticks / tps);
+   spec->tv_nsec =startspec.tv_nsec  + (double)(curticks % tps) * ticks2nano;
+         if (!(spec->tv_nsec < exp9)) { spec->tv_sec++; spec->tv_nsec -=exp9; }
+   return 0;
+}
+
+#define CLOCK_REALTIME 0
+#endif
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                      Helper Functions Declarations
@@ -178,7 +209,6 @@ int main(int argc, char* argv[])
     
     //////////////////////////////////////////////////////////////////// Server /////////////////////////////////////////////////////////////////////////////////
     while(true){
-
         fd_set reads;
         reads = wait_on_clients(clients, server, udp_socket);
 
@@ -238,8 +268,9 @@ int main(int argc, char* argv[])
 
             //check if it's a GET request
             if (command < 1000){
+#ifdef VERBOSE_MODE
                 printf("Received a GET request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-                
+#endif
                 unsigned char* response_buffer;
                 int buffer_size = 0;
 
@@ -280,17 +311,20 @@ int main(int argc, char* argv[])
                 //Send response
                 int bytes_sent = sendto(udp_socket, response_buffer, buffer_size, 0, (struct sockaddr*)&client->udp_addr, client->address_length);
 
+#ifdef VERBOSE_MODE
                 printf("Sent response to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
                 printf("Bytes sent: %d\n", bytes_sent);
-
+#endif
                 drop_udp_client(&udp_clients, client);
                 free(response_buffer);
 
             }
             //check if it's a POST request
             else if (command < 2000){
+                
+#ifdef VERBOSE_MODE
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-
+#endif
                 handle_udp_post_request(command, data, client->udp_request, backend, received_bytes);
 
                 drop_udp_client(&udp_clients, client);
@@ -313,10 +347,9 @@ int main(int argc, char* argv[])
                 drop_udp_client(&udp_clients, client);
             }
         }
-
+        
         // Send telemetry values to Unreal if there's an address saved
         if(unreal){
-            
             clock_gettime(CLOCK_REALTIME, &time_end);
             sub_timespec(time_begin, time_end, &time_delta);
 
@@ -375,7 +408,9 @@ int main(int argc, char* argv[])
                     } else {
 
                         if(strncmp(client->request, "GET/", 4) == 0){
+#ifdef VERBOSE_MODE
                             printf("UDP request\n");
+#endif
                         }
 
                         client->received += bytes_received;
@@ -525,14 +560,14 @@ void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsig
 
 void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct backend_data_t* backend){
 
-    int breaks = backend->p_rover.breaks;
+    int brakes = backend->p_rover.brakes;
     int lights_on = backend->p_rover.lights_on;
     float steering = backend->p_rover.steering;
     float throttle = backend->p_rover.throttle;
     int switch_dest = backend->p_rover.switch_dest;
 
     unsigned int time = backend->server_up_time;
-    unsigned int command = TSS_TO_UNREAL_BREAKS_COMMAND;
+    unsigned int command = TSS_TO_UNREAL_BRAKES_COMMAND;
     unsigned int command2 = TSS_TO_UNREAL_LIGHTS_COMMAND;
     unsigned int command3 = TSS_TO_UNREAL_STEERING_COMMAND;
     unsigned int command4 = TSS_TO_UNREAL_THROTTLE_COMMAND;
@@ -557,7 +592,7 @@ void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct
     
     memcpy(buffer, &time, 4);
     memcpy(buffer + 4, &command, 4);
-    memcpy(buffer + 8, &breaks, 4);
+    memcpy(buffer + 8, &brakes, 4);
 
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&address, len);
 

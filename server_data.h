@@ -109,6 +109,11 @@
 #define PR_FAN_SPIN_UP_RATE 0.9f
 #define PR_FAN_RPM 30000.0f
 
+//Other
+#define exp7           10000000i64     //1E+7     
+#define exp9         1000000000i64     //1E+9
+#define w2ux 116444736000000000i64     //1.jan1601 to 1.jan1970
+
 //
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -237,7 +242,7 @@ struct pr_data_t {
     bool internal_lights_on;
 
     // Drive Commands
-    bool breaks;
+    bool brakes;
     float throttle;
     float steering;
 
@@ -379,6 +384,8 @@ struct backend_data_t {
     struct pr_sim_data_t    pr_sim;
 
 };
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                 Functions

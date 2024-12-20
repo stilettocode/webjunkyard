@@ -3,7 +3,7 @@
 		"ac_heating":	false,
 		"ac_cooling":	false,
 		"lights_on":	false,
-		"breaks":	false,
+		"brakes":	false,
 		"in_sunlight":	false,
 		"throttle":	78.5,
 		"steering":	0,

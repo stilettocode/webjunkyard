@@ -91,11 +91,15 @@ void handle_udp_post_request(unsigned int command, char* data, char* request, st
     else if(command < 1131){
 
         if(command == 1130){
+#ifdef VERBOSE_MODE
             printf("Posting PR Lidar,\n");
+#endif
             udp_post_pr_lidar(request, backend, received_bytes);
         }
         else{
+#ifdef VERBOSE_MODE
             printf("Posting PR Telemetry.\n");
+#endif
             udp_post_pr_telemetry(command, data, backend);
         }
     }
@@ -136,7 +140,7 @@ bool udp_get_teams(unsigned char* request_content){
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -172,7 +176,6 @@ bool udp_get_teams(unsigned char* request_content){
 
 // -------------------------- INIT --------------------------------
 struct backend_data_t* init_backend(){
-
     // init backend
     struct backend_data_t* backend = malloc(sizeof(struct backend_data_t));
     memset(backend, 0, sizeof(struct backend_data_t));
@@ -385,7 +388,7 @@ bool udp_get_uia(unsigned int command, unsigned char* data){
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -567,7 +570,7 @@ bool udp_get_dcu(unsigned int command, unsigned char* data){
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -713,7 +716,7 @@ bool udp_get_imu(unsigned int command, unsigned char* data){
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -831,7 +834,7 @@ bool udp_get_rover(unsigned int command, unsigned char* data){
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -966,7 +969,7 @@ bool udp_get_spec(unsigned int command, unsigned char* data){
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -1099,7 +1102,7 @@ bool udp_get_comm(unsigned char* data){
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -1226,7 +1229,7 @@ bool udp_get_error(unsigned int command, unsigned char* data){
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -1433,8 +1436,7 @@ bool update_eva(char* request_content, struct backend_data_t* backend){
 
 // -------------------------- Telemetry --------------------------------
 bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed){
-
-    const char format_buffer[2048] = 
+    const char format_buffer[4096] = 
     "\n{"
 	"\n\t\"telemetry\": {"
 
@@ -1490,7 +1492,7 @@ bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed
     "\n\t}"
     "\n}";
 
-    char out_buffer[512];
+    char out_buffer[2048];
     sprintf(out_buffer, format_buffer, 
         eva->total_time,
 
@@ -1541,12 +1543,11 @@ bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed
         eva->eva2.coolant_liquid_pressure
     );
 
-    char filenameTemplate[48] = "public/json_data/teams/%d/%sTELEMETRY.json";
-    char out_filename[48];
+    char filenameTemplate[128] = "public/json_data/teams/%d/%sTELEMETRY.json";
+    char out_filename[256];
     sprintf(out_filename, filenameTemplate, 
         team_index,
         completed ? "Completed_" : "");
-    
     // Write bytes to file
     FILE* fd_tel = fopen(out_filename, "w");
     size_t bytes_written = fwrite(out_buffer, 1, strlen(out_buffer), fd_tel);
@@ -1568,7 +1569,7 @@ bool build_json_pr_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "co2_scrubber", cJSON_CreateBool(rover->co2_scrubber));
     cJSON_AddItemToObject(pr_telemetry, "lights_on", cJSON_CreateBool(rover->lights_on));
     cJSON_AddItemToObject(pr_telemetry, "internal_lights_on", cJSON_CreateBool(rover->internal_lights_on));
-    cJSON_AddItemToObject(pr_telemetry, "breaks", cJSON_CreateBool(rover->breaks));
+    cJSON_AddItemToObject(pr_telemetry, "brakes", cJSON_CreateBool(rover->brakes));
     cJSON_AddItemToObject(pr_telemetry, "in_sunlight", cJSON_CreateBool(rover->in_sunlight));
     cJSON_AddItemToObject(pr_telemetry, "throttle", cJSON_CreateNumber(rover->throttle));
     cJSON_AddItemToObject(pr_telemetry, "steering", cJSON_CreateNumber(rover->steering));
@@ -1916,10 +1917,10 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
         request_content += strlen("lights_on=");
         printf("PR LIGHTS: ");
     }
-    else if(strncmp(request_content, "breaks=", strlen("breaks=")) == 0){
-        update_var = &p_rover->breaks;
-        request_content += strlen("breaks=");
-        printf("PR BREAKS: ");
+    else if(strncmp(request_content, "brakes=", strlen("brakes=")) == 0){
+        update_var = &p_rover->brakes;
+        request_content += strlen("brakes=");
+        printf("PR BRAKES: ");
     }
     else if(strncmp(request_content, "in_sunlight=", strlen("in_sunlight=")) == 0){
         update_var = &p_rover->in_sunlight;
@@ -2246,7 +2247,7 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -2323,7 +2324,7 @@ bool udp_get_pr_telemetry(unsigned int command, unsigned char* data){
     rewind(fp);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -2393,7 +2394,7 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
     //printf("file size: %d\n", file_size);
 
     //Save file to buffer
-    char file_buffer[file_size]; 
+    char *file_buffer = malloc(sizeof(char) * file_size); 
     int len = fread(file_buffer, 1, file_size, fp); 
     fclose(fp); 
 
@@ -2687,7 +2688,7 @@ size_t rover_index(int idx){
         offsetof(struct pr_data_t, ac_cooling),
         offsetof(struct pr_data_t, co2_scrubber),
         offsetof(struct pr_data_t, lights_on),
-        offsetof(struct pr_data_t, breaks),
+        offsetof(struct pr_data_t, brakes),
         offsetof(struct pr_data_t, in_sunlight),
         offsetof(struct pr_data_t, throttle),
         offsetof(struct pr_data_t, steering),

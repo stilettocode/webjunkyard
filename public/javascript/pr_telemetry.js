@@ -38,13 +38,13 @@ function loadPR_Telemetry(){
             document.getElementById("internalLightsSwitch").checked = false;
         } 
 
-        if(data.pr_telemetry.breaks == true){
-            document.getElementById("breaksSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
-            document.getElementById("breaksSwitch").checked = true;
+        if(data.pr_telemetry.brakes == true){
+            document.getElementById("brakesSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
+            document.getElementById("brakesSwitch").checked = true;
         }
         else{
-            document.getElementById("breaksSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
-            document.getElementById("breaksSwitch").checked = false;
+            document.getElementById("brakesSensor").style.backgroundColor = 'rgba(100, 100, 100, 1)';
+            document.getElementById("brakesSwitch").checked = false;
         } 
 
         if(data.pr_telemetry.in_sunlight == true){

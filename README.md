@@ -21,14 +21,19 @@
 ## :earth_americas: Run TSS Server
 1. Clone the repository...
 ```
-git clone https://github.com/SUITS-Techteam/TSS_2024.git
+git clone https://github.com/SUITS-Techteam/TSS-2025.git
 ```
 2. Navigate into the root of the repository
 7. To build the TSS Server, run...\
-This will require the C compiler gcc.
+On Linux or WSL, this will require the C compiler gcc.
 ```
 ./build.bat
 ```
+You can also use the [Visual Studio build tools](https://learn.microsoft.com/en-us/cpp/build/walkthrough-compile-a-c-program-on-the-command-line?view=msvc-170) to compile with
+```
+./buildvs.bat
+```
+
 
 4. To run the TSS Server, run ...
 ```
@@ -133,3 +138,16 @@ This is where you can monitor the state of the server, verify the display of you
 * public folder: contains a frontend for testing your device with TSS, along with all the json files that you will need from the server.
 
 This server is based on "Network Programming in C" and builds off of the HTTPs example.
+
+## Pressurized Rover Commanding
+* In order to command the pressurized rover you will need to send commands to a udp socket running on port 14141. The command will be formatted like so (in big endian):
+
+| Timestamp (unit32) | Command number (uint32) | Data (float) |
+| ------------------ | ----------------------- | ------------ |
+| 4 bytes            | 4 bytes                 | 4 bytes      |
+
+Here are the relevant command numbers, both floats:
+| Command number | Command     | Range     |
+| -------------- | -------     | --------- |
+| 1109           | Throttle    | -100, 100 |
+| 1110           | Steering    | -1.0, 1.0 |
