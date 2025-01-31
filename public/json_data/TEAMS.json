@@ -1,17 +1,17 @@
 
 {
 	"teams": {
-		"team_1":   "ARSIS",
-		"team_2":   "Cartographer",
-		"team_3":   "CLAWS",
-		"team_4":   "COSMIC",
-		"team_5":   "CosmoShox",
-		"team_6":   "C.U.I.T.S.",
-		"team_7":   "Daedalus",
-		"team_8":   "JARIVS",
-		"team_9":	"M.I.K.E.",
-		"team_10":	"RISD SUITS",
-		"team_11":	"Space Bears",
+		"team_1":   "Team 01",
+		"team_2":   "Team 02",
+		"team_3":   "Team 03",
+		"team_4":   "Team 04",
+		"team_5":   "Team 05",
+		"team_6":   "Team 06",
+		"team_7":   "Team 07",
+		"team_8":   "Team 08",
+		"team_9":	"Team 09",
+		"team_10":	"Team 10",
+		"team_11":	"Team 11",
 		"team_num": 11
 	}
 }
