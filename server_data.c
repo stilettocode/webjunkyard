@@ -19,7 +19,7 @@ size_t rover_index();
 
 // --------------------------Handle UDP Request-------------------------------
 
-void handle_udp_get_request(unsigned int command, unsigned char* data){
+void handle_udp_get_request(unsigned int command, unsigned char* data, struct backend_data_t* backend){
 
     if(command == 0){
         printf("Invalid command.\n");
@@ -75,7 +75,7 @@ void handle_udp_get_request(unsigned int command, unsigned char* data){
     else if(command < 165){
         printf("Getting Rover Telemetry.\n");
 
-        udp_get_pr_telemetry(command, data);
+        udp_get_pr_telemetry(command, data, backend);
     }
     else{
         printf("Request not found.\n");
@@ -180,13 +180,15 @@ struct backend_data_t* init_backend(){
     struct backend_data_t* backend = malloc(sizeof(struct backend_data_t));
     memset(backend, 0, sizeof(struct backend_data_t));
     backend->start_time = time(NULL);
+    backend->running_pr_sim = -1;
+    backend->pr_sim_paused = false;
 
     for(int i = 0; i < NUMBER_OF_TEAMS; i++){
         reset_telemetry(&(backend->evas[i].eva1), 0.0f);
         reset_telemetry(&(backend->evas[i].eva2), 1000.0f);
+        reset_pr_telemetry(backend, i);
     }
 
-    reset_pr_telemetry(backend);
 
     // reset Json files
     build_json_uia(&backend->uia);
@@ -195,11 +197,11 @@ struct backend_data_t* init_backend(){
     build_json_rover(&backend->rover);
     build_json_spec(&backend->spec);
     build_json_comm(&backend->comm);
-    build_json_pr_telemetry(&backend->p_rover, false);
 
     for(int i = 0; i < NUMBER_OF_TEAMS; i++){
         build_json_eva(&backend->evas[i], i, false);
         build_json_telemetry(&backend->evas[i], i, false);
+        build_json_pr_telemetry(&backend->p_rover[i], i, false);
     }
 
     return backend;
@@ -210,18 +212,17 @@ void cleanup_backend(struct backend_data_t*  backend){
     free(backend);
 }
 
-void reset_pr_telemetry(struct backend_data_t* backend){
-
-    backend->p_rover.battery_level = 100;
-    backend->p_rover.oxygen_tank = PR_OXYGEN_TANK_CAP;
-    backend->p_rover.fan_pri = true;
-    backend->p_rover.cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
-    backend->pr_sim.target_temp = NOMINAL_CABIN_TEMPERATURE;
-    backend->pr_sim.object_temp = NOMINAL_CABIN_TEMPERATURE;
-    backend->p_rover.cabin_pressure = NOMINAL_CABIN_PRESSURE;
-    backend->p_rover.pr_coolant_level = NOMINAL_COOLANT_LEVEL;
-    backend->p_rover.pr_coolant_tank = PR_COOLANT_TANK_CAP;
-    backend->p_rover.pr_coolant_pressure = NOMINAL_COOLANT_PRESSURE;
+void reset_pr_telemetry(struct backend_data_t* backend, int teamIndex){
+    backend->p_rover[teamIndex].battery_level = 100;
+    backend->p_rover[teamIndex].oxygen_tank = PR_OXYGEN_TANK_CAP;
+    backend->p_rover[teamIndex].fan_pri = true;
+    backend->p_rover[teamIndex].cabin_temperature = NOMINAL_CABIN_TEMPERATURE;
+    backend->pr_sim[teamIndex].target_temp = NOMINAL_CABIN_TEMPERATURE;
+    backend->pr_sim[teamIndex].object_temp = NOMINAL_CABIN_TEMPERATURE;
+    backend->p_rover[teamIndex].cabin_pressure = NOMINAL_CABIN_PRESSURE;
+    backend->p_rover[teamIndex].pr_coolant_level = NOMINAL_COOLANT_LEVEL;
+    backend->p_rover[teamIndex].pr_coolant_tank = PR_COOLANT_TANK_CAP;
+    backend->p_rover[teamIndex].pr_coolant_pressure = NOMINAL_COOLANT_PRESSURE;
 }
 
 void reset_telemetry(struct telemetry_data_t* telemetry, float seed){
@@ -1557,7 +1558,7 @@ bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed
 
 }
 
-bool build_json_pr_telemetry(struct pr_data_t* rover, bool completed){
+bool build_json_pr_telemetry(struct pr_data_t* rover, int team_index, bool completed){
 
     cJSON* json = cJSON_CreateObject();
     cJSON_AddItemToObject(json, "pr_telemetry", cJSON_CreateObject());
@@ -1610,6 +1611,10 @@ bool build_json_pr_telemetry(struct pr_data_t* rover, bool completed){
     cJSON_AddItemToObject(pr_telemetry, "dest_y", cJSON_CreateNumber(rover->dest_y));
     cJSON_AddItemToObject(pr_telemetry, "dest_z", cJSON_CreateNumber(rover->dest_z));
     cJSON_AddItemToObject(pr_telemetry, "dust_wiper", cJSON_CreateBool(rover->dust_wiper));
+    cJSON_AddItemToObject(pr_telemetry, "sim_running", cJSON_CreateBool(rover->sim_running));
+    cJSON_AddItemToObject(pr_telemetry, "sim_paused", cJSON_CreateBool(rover->sim_paused));
+    cJSON_AddItemToObject(pr_telemetry, "sim_completed", cJSON_CreateBool(rover->sim_completed));
+
     
     cJSON* lidar = cJSON_CreateArray();
 
@@ -1623,14 +1628,22 @@ bool build_json_pr_telemetry(struct pr_data_t* rover, bool completed){
     FILE* fp;
 
     if(completed){
-        fp = fopen("public/json_data/COMPLETED_ROVER_TELEMETRY.json", "w");
+        char filenameTemplate[128] = "public/json_data/teams/%d/COMPLETED_ROVER_TELEMETRY.json";
+        char out_filename[256];
+        sprintf(out_filename, filenameTemplate, team_index);
+
+        fp = fopen(out_filename, "w");
         if (fp == NULL) { 
             printf("Error: Unable to open the file.\n"); 
             return false; 
         }
     }
     else{
-        fp = fopen("public/json_data/ROVER_TELEMETRY.json", "w");
+        char filenameTemplate[128] = "public/json_data/teams/%d/ROVER_TELEMETRY.json";
+        char out_filename[256];
+        sprintf(out_filename, filenameTemplate, team_index);
+
+        fp = fopen(out_filename, "w");
         if (fp == NULL) { 
             printf("Error: Unable to open the file.\n"); 
             return false; 
@@ -1898,11 +1911,76 @@ bool update_telemetry(struct telemetry_data_t* telemetry, uint32_t eva_time, str
 
 }
 
-bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
-
+bool update_pr_telemetry(char* request_content, struct backend_data_t* backend, int teamIndex){
     bool* update_var = NULL;
+    struct pr_data_t* p_rover = NULL;
 
-    if(strncmp(request_content, "ac_heating=", strlen("ac_heating=")) == 0){
+    if (teamIndex >= 0 && teamIndex < NUMBER_OF_TEAMS) {
+        p_rover = &backend->p_rover[teamIndex];
+    } 
+
+    if(strncmp(request_content, "start_team=", strlen("start_team=")) == 0) {
+        request_content += strlen("start_team=");
+        teamIndex = atoi(request_content);
+        // Begin PR with a new team
+        if(teamIndex > NUMBER_OF_TEAMS) { return false; }
+        memset(&backend->pr_sim[teamIndex], 0, sizeof(struct pr_sim_data_t));
+        memset(&backend->p_rover[teamIndex], 0, sizeof(struct pr_data_t));
+        // reset_telemetry(&(backend->evas[team].eva1), 0.0f + team * 5000.0f);
+        // reset_telemetry(&(backend->evas[team].eva2), 1000.0f + team * 5000.0f);
+
+        reset_pr_telemetry(backend, teamIndex);
+        backend->running_pr_sim = teamIndex;
+        backend->p_rover[teamIndex].sim_running = true;
+        backend->p_rover[teamIndex].sim_completed = false;
+        backend->p_rover[teamIndex].sim_paused = false;
+        printf("Team %d PR Started\n", teamIndex);
+    } else if(strncmp(request_content, "end_team=", strlen("end_team=")) == 0) {
+        // End PR with current team
+        printf("stop Team %d PR\n", teamIndex);
+        request_content += strlen("end_team=");
+        teamIndex = atoi(request_content);
+        if(teamIndex > NUMBER_OF_TEAMS || teamIndex != backend->running_pr_sim) { return false; }
+        if (!backend->p_rover[teamIndex].sim_running && !backend->p_rover[teamIndex].sim_paused) { return false; }
+        build_json_pr_telemetry(p_rover, teamIndex, true);
+        backend->running_pr_sim = -1;
+        backend->pr_sim_paused = false;
+        backend->p_rover[teamIndex].sim_running = false;
+        backend->p_rover[teamIndex].sim_paused = false;
+        backend->p_rover[teamIndex].sim_completed = true;
+
+        //Write out completed json
+        build_json_pr_telemetry(&backend->p_rover[teamIndex], teamIndex, false);
+        build_json_pr_telemetry(&backend->p_rover[teamIndex], teamIndex, true);
+
+        printf("Team %d PR Completed\n", teamIndex);
+    } else if(strncmp(request_content, "pause_team=", strlen("pause_team=")) == 0) {
+        // Pause the current PR for team #
+        request_content += strlen("pause_team=");
+        teamIndex = atoi(request_content);
+        if(teamIndex > NUMBER_OF_TEAMS || teamIndex != backend->running_pr_sim) { return false; }
+        if (!backend->p_rover[teamIndex].sim_running) { return false; }
+        build_json_pr_telemetry(p_rover, teamIndex, true);
+        backend->pr_sim_paused = true;
+        backend->p_rover[teamIndex].sim_running = true;
+        backend->p_rover[teamIndex].sim_paused = true;
+        
+        //Write out json otherwise it will never write out
+        build_json_pr_telemetry(&backend->p_rover[teamIndex], teamIndex, false);
+        printf("Team %d PR Paused\n", teamIndex);
+    } else if(strncmp(request_content, "unpause_team=", strlen("unpause_team=")) == 0) {
+        // Unpause the current PR for team #
+        request_content += strlen("unpause_team=");
+        teamIndex = atoi(request_content);
+        if(teamIndex > NUMBER_OF_TEAMS || teamIndex != backend->running_pr_sim) { return false; }
+        if (!backend->p_rover[teamIndex].sim_paused) { return false; }
+        build_json_pr_telemetry(p_rover, teamIndex, true);
+        backend->pr_sim_paused = false;
+        backend->p_rover[teamIndex].sim_running = true;
+        backend->p_rover[teamIndex].sim_paused = false;
+        printf("Team %d PR Paused\n", teamIndex);
+    }
+    else if(strncmp(request_content, "ac_heating=", strlen("ac_heating=")) == 0){
         update_var = &p_rover->ac_heating;
         request_content += strlen("ac_heating=");
         printf("PR AC HEATING: ");
@@ -1969,7 +2047,7 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
             return false;
         }
 
-        build_json_pr_telemetry(p_rover, false);
+        build_json_pr_telemetry(p_rover, teamIndex, false);
     }
 
     return true;
@@ -1978,7 +2056,7 @@ bool update_pr_telemetry(char* request_content, struct pr_data_t* p_rover){
 void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, struct backend_data_t* backend){
 
     int random_seed = backend->server_up_time;
-
+    p_rover->mission_elapsed_time += 1;
     bool dcu_pump_is_open_eva1 = backend->dcu.eva1_pump;
     bool dcu_pump_is_open_eva2 = backend->dcu.eva2_pump;
     
@@ -2134,9 +2212,12 @@ void simulate_pr_telemetry(struct pr_data_t* p_rover, uint32_t server_time, stru
 }
 
 void simulate_cabin_temperature(struct backend_data_t* backend){
+    if (backend->running_pr_sim < 0) {
+        return;
+    }
 
-    struct pr_data_t* p_rover = &backend->p_rover;
-    struct pr_sim_data_t* cabin_sim = &backend->pr_sim;
+    struct pr_data_t* p_rover = &backend->p_rover[backend->running_pr_sim];
+    struct pr_sim_data_t* cabin_sim = &backend->pr_sim[backend->running_pr_sim];
     uint32_t server_time = backend->server_up_time;
 
     float new_target_temp;
@@ -2194,8 +2275,12 @@ void simulate_cabin_temperature(struct backend_data_t* backend){
 }
 
 void simulate_external_temperature(struct backend_data_t* backend){
-    struct pr_data_t* p_rover = &backend->p_rover;
-    struct pr_sim_data_t* cabin_sim = &backend->pr_sim;
+    if (backend->running_pr_sim < 0) {
+        return;
+    }
+
+    struct pr_data_t* p_rover = &backend->p_rover[backend->running_pr_sim];
+    struct pr_sim_data_t* cabin_sim = &backend->pr_sim[backend->running_pr_sim];
     uint32_t server_time = backend->server_up_time;
 
     float new_external_target_temp;
@@ -2218,7 +2303,6 @@ void simulate_external_temperature(struct backend_data_t* backend){
 
     // Newton's cooling law
     p_rover->external_temp = cabin_sim->external_target_temp + ((cabin_sim->external_object_temp - cabin_sim->external_target_temp) * (pow(E, k*(server_time - cabin_sim->external_start_time))));
-
 }
 
 bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data){
@@ -2304,7 +2388,7 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
     return true;
 }
 
-bool udp_get_pr_telemetry(unsigned int command, unsigned char* data){
+bool udp_get_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 119;
 
     if(off_set > 45){
@@ -2312,7 +2396,19 @@ bool udp_get_pr_telemetry(unsigned int command, unsigned char* data){
         return false;
     }
 
-    FILE* fp = fopen("public/json_data/ROVER_TELEMETRY.json", "r");
+    if (backend->running_pr_sim < 0) {
+        return false;
+    }
+
+    char start_path[50] = "public/json_data/teams/";
+    char team[3] = "";
+    char* end_path = "/ROVER_TELEMETRY.json";
+
+    sprintf(team, "%d", backend->running_pr_sim);
+    strcat(start_path, team);
+    strcat(start_path, end_path);
+
+    FILE* fp = fopen(start_path, "r");
     if (fp == NULL) { 
         printf("Error: Unable to open the file.\n"); 
         return false; 
@@ -2549,6 +2645,10 @@ bool udp_post_pr_telemetry(unsigned int command, unsigned char* data, struct bac
 }
 
 void udp_post_pr_lidar(char* request, struct backend_data_t* backend, int received_bytes){
+    if (backend->running_pr_sim < 0) {
+        return;
+    }
+
     char* lidar = request + 8;
 
     //printf("received bytes: %d\n", received_bytes);
@@ -2556,14 +2656,14 @@ void udp_post_pr_lidar(char* request, struct backend_data_t* backend, int receiv
     bool b_endian = big_endian();
     memcpy(&firstOne, request + 8, 4);
 
-    backend->p_rover.lidar[0] = firstOne;
+    backend->p_rover[backend->running_pr_sim].lidar[0] = firstOne;
 
     int total_floats = (received_bytes - 8)/4;
     for(int i = 1; i < total_floats; i++){
         if(!b_endian){
             reverse_bytes(lidar + 4*i);
         }
-        memcpy(&backend->p_rover.lidar[i], lidar + 4*i, 4);
+        memcpy(&backend->p_rover[backend->running_pr_sim].lidar[i], lidar + 4*i, 4);
     }
 
     /*
@@ -2579,14 +2679,17 @@ void udp_post_pr_lidar(char* request, struct backend_data_t* backend, int receiv
 }
 
 void udp_get_pr_lidar(char* lidar, struct backend_data_t* backend){
+    if (backend->running_pr_sim < 0) {
+        return;
+    }
 
-    size_t lidar_size = sizeof(backend->p_rover.lidar)/sizeof(float);
+    size_t lidar_size = sizeof(backend->p_rover[backend->running_pr_sim].lidar)/sizeof(float);
     bool b_endian = big_endian();
 
     unsigned char temp[4];
     for (int i = 0; i < lidar_size; i++){
         
-        memcpy(temp, backend->p_rover.lidar + i, 4);
+        memcpy(temp, backend->p_rover[backend->running_pr_sim].lidar + i, 4);
         if(!b_endian){
             reverse_bytes(temp);
         }
@@ -2596,10 +2699,9 @@ void udp_get_pr_lidar(char* lidar, struct backend_data_t* backend){
 
 // -------------------------- Update --------------------------------
 bool update_resource(char* request_content, struct backend_data_t* backend){
-
     // printf("request content: %s\n", request_content);
 
-    if(strncmp(request_content, "uia_", 4) == 0){
+     if(strncmp(request_content, "uia_", 4) == 0){
         request_content += 4;
         return update_uia(request_content, &(backend->uia));
     } else if(strncmp(request_content, "dcu_", 4) == 0){
@@ -2623,9 +2725,21 @@ bool update_resource(char* request_content, struct backend_data_t* backend){
     } else if(strncmp(request_content, "error_", 6) == 0){
         request_content += 6;
         return update_error(request_content, &backend->failures);
-    } else if(strncmp(request_content, "pr_", strlen("pr_")) == 0){
+    } else if(strncmp(request_content, "pr_start_team=", strlen("pr_start_team=")) == 0){
+        if (backend->running_pr_sim >= 0) {
+            return false;
+        }
+
         request_content += strlen("pr_");
-        return update_pr_telemetry(request_content, &backend->p_rover);
+        return update_pr_telemetry(request_content, backend, -1);
+    } else if(strncmp(request_content, "pr_", strlen("pr_")) == 0){
+        if (backend->running_pr_sim < 0) {
+            return false;
+        }
+
+        int runningPRSim = backend->running_pr_sim;
+        request_content += strlen("pr_");
+        return update_pr_telemetry(request_content, backend, runningPRSim);
     }
 
     return false;
@@ -2668,15 +2782,16 @@ void simulate_backend(struct backend_data_t* backend){
 
                 // Update Telemetry Json
                 build_json_telemetry(&backend->evas[i], i, false);
+            }
 
+            if (backend->running_pr_sim == i && !backend->pr_sim_paused) {
+                simulate_pr_telemetry(&backend->p_rover[i], backend->server_up_time, backend);
+
+                // Update Pressurized Rover Telemetry (ROVER_TELEMETRY.json)
+                build_json_pr_telemetry(&backend->p_rover[i], i, false);
             }
             
         }
-
-        simulate_pr_telemetry(&backend->p_rover, backend->server_up_time, backend);
-
-        // Update Pressurized Rover Telemetry (ROVER_TELEMETRY.json)
-        build_json_pr_telemetry(&backend->p_rover, false);
 
     }
 }

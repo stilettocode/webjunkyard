@@ -1,3 +1,89 @@
+/******************************** Room List CSS ********************************/
+.roomListContainer {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  margin-top: 1rem; 
+  background-color: var(--darker-grey);
+  border-radius: 0rem 1rem 1rem 0rem;
+  width: 20%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.roomListTitle {
+  color: var(--white);
+  font-size: 1.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.roomListItemBody {
+  font-size: .75rem;
+  padding-top: .25rem;
+  padding-bottom: .25rem;
+  margin-top:.5rem;
+  background-color: var(--dark-grey);
+  border-radius: 1rem;
+  width: 95%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+
+.roomListItemBody:hover {
+  background-color: var(--grey);
+  transition: 1s;
+}
+
+.roomListLightContainer {
+  width: 15%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
+.roomListLight {
+  background-color: var(--light-grey);
+  border-radius: 5rem;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.roomListTeamNameContainer { 
+  width: 45%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
+.roomListTeamNameRoomNum {
+  color: var(--white);
+  padding-top: .5rem;
+  padding-bottom: .5rem;
+  font-weight: bold;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.roomListRoomNumContainer {
+  width: 25%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
 /******************************** Main Page Data CSS ********************************/
 .roomDataContainer {
   width: 100%;

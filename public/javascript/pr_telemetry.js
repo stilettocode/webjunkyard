@@ -1,6 +1,60 @@
+let selectedTeam = 0;
+
+// Called when a new room is selected on the sidebar
+function roomSelect(inputVal){
+    var elem = document.getElementsByClassName("roomListItemBody");
+
+    for ( var i = 0; i < elem.length; i++) 
+    {
+        elem[i].style.borderStyle = 'none';
+    }
+        
+    roomBorder(inputVal);
+
+    // minus 1 handles the zero indexing of the team number folders
+    swapTeams(inputVal);
+}
+
+// Puts border around Room name and number when selected
+function roomBorder(num) {
+
+    var roomId = "room" + (num);
+    document.getElementById(roomId).style.borderColor = 'rgba(255, 255, 255, 1)';
+    document.getElementById(roomId).style.borderWidth = '.05rem';
+    document.getElementById(roomId).style.borderStyle = 'solid';
+}
+
+// Sets the cookie to remember the last team selected
+function setCookie(cname, cvalue, exdays) {
+
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    let expires = "expires=" + d.toUTCString();
+
+    // Sets cookie value for the room num and gives it an expiration date
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+// Updates team specific data when another team is selected
+function swapTeams(newTeam){
+
+    // Update global team
+    selectedTeam = newTeam - 1;
+
+    // Reload the team specific Json files
+    loadPR_Telemetry(selectedTeam);
+
+    // Assign page title based on room selected
+    var room = "room" + (selectedTeam + 1) + "Name";
+    document.getElementById('roomDataTitle').textContent = document.getElementById(room).innerText + " - Room " + (selectedTeam + 1);
+
+    // Sets the cookie anytime a new team is selected
+    setCookie("roomNum", selectedTeam, 1);
+}
+
 // Load telemetry of Pressurized Rover
-function loadPR_Telemetry(){
-    $.getJSON("json_data/ROVER_TELEMETRY.json", function ( data ){
+function loadPR_Telemetry(team){
+    $.getJSON("json_data/teams/" + team + "/ROVER_TELEMETRY.json", function ( data ){
         if(data.pr_telemetry.ac_heating == true){
             document.getElementById("acHeatingSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("acHeatingSwitch").checked = true;
@@ -185,15 +239,70 @@ function loadPR_Telemetry(){
     });
 }
 
+// Loads team names for Rooms
+function loadTeams() {
+
+    $.getJSON("json_data/TEAMS.json", function (data) {
+        document.getElementById('room1Name').innerText = data.teams.team_1;
+        document.getElementById('room2Name').innerText = data.teams.team_2;
+        document.getElementById('room3Name').innerText = data.teams.team_3;
+        document.getElementById('room4Name').innerText = data.teams.team_4;
+        document.getElementById('room5Name').innerText = data.teams.team_5;
+        document.getElementById('room6Name').innerText = data.teams.team_6;
+        document.getElementById('room7Name').innerText = data.teams.team_7;
+        document.getElementById('room8Name').innerText = data.teams.team_8;
+        document.getElementById('room9Name').innerText = data.teams.team_9;
+        document.getElementById('room10Name').innerText = data.teams.team_10;
+        document.getElementById('room11Name').innerText = data.teams.team_11;
+
+        prRunningIndex = -1;
+        prRunningTeam = "";
+        for (var i = 0; i < data.teams.team_num; i++) {
+            loadLights(i);
+        }
+        
+        if (prRunningIndex >= 0) {
+            prRunningTeam =  document.getElementById('room' + (prRunningIndex + 1) + 'Name').innerText
+        }
+    })
+}
+
+// Loads lights for Rooms depending on state
+function loadLights(team) {
+        $.getJSON("json_data/teams/" + team + "/ROVER_TELEMETRY.json", function( pr_data ){
+
+        // Button UI States Visuals
+        var evaStarted  = pr_data.pr_telemetry.sim_running;
+        var evaComplete = pr_data.pr_telemetry.completed;
+
+        // Team light state
+        var room = "room" + (team + 1) + "Light";
+        var roomLight = document.getElementById(room);
+        if(evaStarted){
+            roomLight.style.backgroundColor = 'rgba(0, 240, 10, 1)';
+        } 
+        else if(evaComplete){
+            roomLight.style.backgroundColor = 'rgba(0, 0, 255, 1)';
+        } 
+        else {
+            roomLight.style.backgroundColor = 'rgba(100, 100, 100, 1)';
+        }
+    });
+}
+
 function onload() {
 
     // Load immediately
-    loadPR_Telemetry();
+    loadPR_Telemetry(selectedTeam);
+    loadTeams();
 
     // Continously refreshes values
 	setInterval(function() {
 
-        loadPR_Telemetry();
+        loadPR_Telemetry(selectedTeam);
+
+        loadLights(selectedTeam);
+
 
     }, 1000);
 }

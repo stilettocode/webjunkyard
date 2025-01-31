@@ -597,3 +597,151 @@ input:checked + .slider:before {
   font-size: .85rem;
   white-space: nowrap;
 }
+
+/**************** PR Telemetry CSS ****************/
+.prNameContainer {
+  width: 65%;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+
+.prDataContainer {
+  width: 35%;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+
+.prDataTitle {
+  color: var(--white);
+  font-size: 1rem;
+  white-space: nowrap;
+  font-weight: bold;
+}
+
+.prData {
+  color: var(--white);
+  font-size: .85rem;
+  white-space: nowrap;
+}
+
+.prButton {
+  background-color: white;
+  border-radius: 5rem;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.prButton:hover {
+  background-color: gray;
+  border-radius: 5rem;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.prButton:active {
+  background-color: greenyellow;
+  border-radius: 5rem;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+/**************** UIA State CSS ****************/
+.uiaStateInfoContainer {
+  width: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+
+.uiaStateInfoTitle {
+  color: var(--white);
+  font-size: 1rem;
+  white-space: nowrap;
+  font-weight: bold;
+}
+
+.uiaStateInfo {
+  color: var(--white);
+  font-size: .85rem;
+  white-space: nowrap;
+}
+
+.uiaStateSensorContainer {
+  width: 10%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
+.uiaStateSensor {
+  background-color: var(--light-grey);
+  border-radius: 5rem;
+  height: 1rem;
+  width: 1rem;
+}
+
+.switch {
+  width: 2.95rem;
+  height: 1.25rem;
+  margin-left: .5rem;
+  margin-right: .5rem;
+  position: relative; 
+  display: inline-block;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0rem;
+  height: 0rem;
+}
+
+.slider {
+  background-color: var(--light-grey);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  -webkit-transition: .3s;
+  transition: .3s;
+  position: absolute;
+  cursor: pointer;
+}
+
+.slider:before {
+  height: 1rem;
+  width: 1.25rem;
+  left: .15rem;
+  bottom: .12rem;
+  background-color: var(--white);
+  -webkit-transition: .3s;
+  transition: .3s;
+  position: absolute;
+  content: "";
+}
+
+input:checked + .slider {
+  background-color: var(--light-green);
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(1.45rem);
+  -ms-transform: translateX(1.45rem);
+  transform: translateX(1.45rem);
+}
+
+.slider.round {
+  border-radius: 1rem;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

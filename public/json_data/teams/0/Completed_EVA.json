@@ -4,11 +4,11 @@
 		"started": true,
 		"paused": false,
 		"completed": true,
-		"total_time": 6,
+		"total_time": 1309,
 		"uia": {
-			"started": false,
+			"started": true,
 			"completed": true,
-			"time": 0
+			"time": 1306
 		},
 		"dcu": {
 			"started": false,

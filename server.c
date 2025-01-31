@@ -275,9 +275,9 @@ int main(int argc, char* argv[])
                 int buffer_size = 0;
 
                 //Send lidar
-                if(command == 165){
-                    response_buffer = malloc(sizeof(backend->p_rover.lidar) + 8);
-                    buffer_size = sizeof(backend->p_rover.lidar) + 8;
+                if(command == 165 && backend->running_pr_sim > 0){
+                    response_buffer = malloc(sizeof(backend->p_rover[backend->running_pr_sim].lidar) + 8);
+                    buffer_size = sizeof(backend->p_rover[backend->running_pr_sim].lidar) + 8;
 
                     udp_get_pr_lidar(response_buffer + 8, backend);
 
@@ -293,7 +293,7 @@ int main(int argc, char* argv[])
                 //Handle normal GET request
                 else{
 
-                    handle_udp_get_request(command, data);
+                    handle_udp_get_request(command, data, backend);
                     response_buffer = malloc(12);
                     buffer_size = 12;
 
@@ -559,12 +559,14 @@ void get_contents(char* buffer, unsigned int* time, unsigned int* command, unsig
 }
 
 void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct backend_data_t* backend){
-
-    int brakes = backend->p_rover.brakes;
-    int lights_on = backend->p_rover.lights_on;
-    float steering = backend->p_rover.steering;
-    float throttle = backend->p_rover.throttle;
-    int switch_dest = backend->p_rover.switch_dest;
+    if (backend->running_pr_sim < 0) {
+        return;
+    }
+    int brakes = backend->p_rover[backend->running_pr_sim].brakes;
+    int lights_on = backend->p_rover[backend->running_pr_sim].lights_on;
+    float steering = backend->p_rover[backend->running_pr_sim].steering;
+    float throttle = backend->p_rover[backend->running_pr_sim].throttle;
+    int switch_dest = backend->p_rover[backend->running_pr_sim].switch_dest;
 
     unsigned int time = backend->server_up_time;
     unsigned int command = TSS_TO_UNREAL_BRAKES_COMMAND;

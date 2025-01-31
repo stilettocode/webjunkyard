@@ -295,6 +295,9 @@ struct pr_data_t {
     float mission_planned_time;
     float point_of_no_return;
     float distance_from_base;
+    bool sim_running;
+    bool sim_paused;
+    bool sim_completed;
 
     // Destination
     bool switch_dest;
@@ -365,9 +368,14 @@ struct backend_data_t {
 
     uint32_t start_time;
     uint32_t server_up_time;
+    int running_pr_sim;
+    bool pr_sim_paused;
 
     // Data for each team
     struct eva_data_t       evas[NUMBER_OF_TEAMS];
+    struct pr_sim_data_t    pr_sim[NUMBER_OF_TEAMS];
+    struct pr_data_t        p_rover[NUMBER_OF_TEAMS];
+
     // struct telemetry_data_t telemetry[NUMBER_OF_TEAMS];
 
     // Global Data
@@ -377,12 +385,9 @@ struct backend_data_t {
     struct rover_data_t     rover;
     struct spec_data_t      spec;
     struct comm_data_t      comm;
-    struct pr_data_t        p_rover;
 
     // Simulated Data
     struct eva_failures_t   failures;
-    struct pr_sim_data_t    pr_sim;
-
 };
 
 
@@ -395,7 +400,7 @@ struct backend_data_t {
 struct backend_data_t* init_backend();
 void cleanup_backend(struct backend_data_t*  backend);
 void reset_telemetry(struct telemetry_data_t* telemetry, float seed);
-void reset_pr_telemetry(struct backend_data_t* backend);
+void reset_pr_telemetry(struct backend_data_t* backend, int teamIndex);
 
 // build json files when values update
 bool build_json_meta_data(struct backend_data_t* backend);
@@ -408,7 +413,7 @@ bool build_json_comm     (struct comm_data_t* comm);
 bool build_json_error    (struct eva_failures_t* error);
 bool build_json_eva      (struct eva_data_t* eva, int team_index, bool completed);
 bool build_json_telemetry(struct eva_data_t* eva, int team_index, bool completed);
-bool build_json_pr_telemetry(struct pr_data_t* rover, bool completed);
+bool build_json_pr_telemetry(struct pr_data_t* rover, int team_index, bool completed);
 
 // Update locally stored variables
 bool update_uia      (char* request_content, struct uia_data_t* uia);
@@ -420,7 +425,7 @@ bool update_comm     (char* request_content, struct comm_data_t* comm);
 bool update_error    (char* request_content, struct eva_failures_t* error);
 bool update_eva      (char* request_content, struct backend_data_t* backend);
 bool update_telemetry(struct telemetry_data_t* telemetry, uint32_t eva_time, struct backend_data_t* backend, bool isEVA1);
-bool update_pr_telemetry(char* request_content, struct pr_data_t* prover);
+bool update_pr_telemetry(char* request_content, struct backend_data_t* backend, int teamIndex);
 bool update_resource(char* request_content, struct backend_data_t* backend); // Entry Point to all other update functions
 
 // Simulate the backend
@@ -442,9 +447,9 @@ bool udp_get_rover(unsigned int command, unsigned char* data);
 bool udp_get_comm(unsigned char* data);
 bool udp_get_teams(unsigned char* request_content);
 bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned char* data);
-bool udp_get_pr_telemetry(unsigned int command, unsigned char* data);
+bool udp_get_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend);
 bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* data);
-void handle_udp_get_request(unsigned int command, unsigned char* data);
+void handle_udp_get_request(unsigned int command, unsigned char* data, struct backend_data_t* backend);
 void udp_get_pr_lidar(char* lidar, struct backend_data_t* backend);
 
 // UDP POST functions
