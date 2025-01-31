@@ -2391,6 +2391,8 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
 bool udp_get_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 119;
 
+    printf("get friggen got nerd \n");
+
     if(off_set > 45){
         printf("Not yet implemented.\n");
         return false;
@@ -2624,14 +2626,22 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 }
 
 bool udp_post_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
+    if (backend->running_pr_sim < 0) {
+        return false;
+    }
+    
     int off_set = command - 1103;
+
+    if (command == 1108) {
+        reverse_bytes(data);
+    }
 
     if(off_set > 23){
         printf("Command not valid.\n");
         return false;
     }
 
-    char* p_rover = (char*)&(backend->p_rover);
+    char* p_rover = (char*)&(backend->p_rover[backend->running_pr_sim]);
 
     //access PR elements by index
     p_rover += rover_index(off_set);

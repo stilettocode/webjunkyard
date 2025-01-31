@@ -559,8 +559,6 @@ function loadLights(team) {
 // Load telemetry of Pressurized Rover
 function loadPR_Telemetry(team){
     $.getJSON("json_data/teams/" + team + "/ROVER_TELEMETRY.json", function ( data ){
-
-        console.log("please i need this pelase")
         if(data.pr_telemetry.ac_heating == true){
             document.getElementById("acHeatingSensor").style.backgroundColor = 'rgba(0, 240, 10, 1)';
             document.getElementById("acHeatingSwitch").checked = true;
