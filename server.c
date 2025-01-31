@@ -564,7 +564,7 @@ void tss_to_unreal(int socket, struct sockaddr_in address, socklen_t len, struct
     int brakes = backend->p_rover[backend->running_pr_sim].brakes;
     int lights_on = backend->p_rover[backend->running_pr_sim].lights_on;
     float steering = backend->p_rover[backend->running_pr_sim].steering;
-    float throttle = 100;//backend->p_rover[backend->running_pr_sim].throttle;
+    float throttle = backend->p_rover[backend->running_pr_sim].throttle;
     int switch_dest = backend->p_rover[backend->running_pr_sim].switch_dest;
 
     unsigned int time = backend->server_up_time;
