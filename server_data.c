@@ -33,7 +33,7 @@ void handle_udp_get_request(unsigned int command, unsigned char* data, struct ba
         udp_get_dcu(command, data);
     }
     else if(command < 17){
-        printf("Getting ERORR.\n");
+        printf("Getting ERROR.\n");
         udp_get_error(command, data);
     }
     else if(command < 23){

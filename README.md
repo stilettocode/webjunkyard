@@ -139,15 +139,56 @@ This is where you can monitor the state of the server, verify the display of you
 
 This server is based on "Network Programming in C" and builds off of the HTTPs example.
 
-## Pressurized Rover Commanding
-* In order to command the pressurized rover you will need to send commands to a udp socket running on port 14141. The command will be formatted like so (in big endian):
+## UDP Socket communication
+* To communicate with the TSS over a UDP socket, connect to it's IP over port 14141 (it will output in the log when running). From there you can send a number of commands in the following format (in big endian): 
 
-| Timestamp (unit32) | Command number (uint32) | Data (float) |
+| Timestamp (unit32) | Command number (uint32) | Input Data (float)  |
 | ------------------ | ----------------------- | ------------ |
 | 4 bytes            | 4 bytes                 | 4 bytes      |
 
-Here are the relevant command numbers, both floats:
-| Command number | Command     | Range     |
-| -------------- | -------     | --------- |
-| 1109           | Throttle    | -100, 100 |
-| 1110           | Steering    | -1.0, 1.0 |
+Here's a list of get commands you can send to the socket. They are mostly related to the json files in `public/json_data`, and will be listed as such. The command number order will match the order of data in the json file. 
+| Command number | Command                       | Referenced .json file|
+| -------------- | -------                       | --------- 
+| 2-7            | Get EVA1 DCU switch states    | `DCU.json` |
+| 8-13           | Get EVA2 DCU switch states    | `DCU.json` |
+| 14-16          | Get ERROR states             | `ERROR.json` |
+| 17-19          | Get EVA1 IMU states             | `IMU.json` |
+| 20-22         | Get EVA2 IMU states             | `IMU.json` |
+| 23-25         | Get ROVER states             | `ROVER.json` |
+| 26-36         | Get EVA 1 SPEC states (excludes `name` field)            | `SPEC.json` |
+| 37-47        | Get EVA 2 SPEC states (excludes `name` field)              | `SPEC.json` |
+| 48-57        | Get UIA states             | `UIA.json` |
+| 58        | Get current EVA time for the team number passed in the data field as a float            | `/teams/x/TELEMTRY.json` |
+| 59-80        | Get TELEMETRY states for EVA1 and the team number passed in the data field as a float            | `/teams/x/TELEMTRY.json` |
+| 81-102        | Get TELEMETRY states for EVA1 and the team number passed in the data field as a float            | `/teams/x/TELEMTRY.json` |
+| 103-118        | Get EVA states for the team number passed in the data field as a float            | `/teams/x/EVA.json` |
+| 119-164        | Get Pressurized Rover states for the team currently running the PR sim | `/teams/x/ROVER_TELEMETRY.json` |
+| 165        | Get Pressurized Rover LIDAR data, explaned below | `/teams/x/ROVER_TELEMETRY.json` |
+
+## Pressurized Rover LIDAR
+The pressurized rover in the DUST simulation has 13 'LIDAR' sensors. Each of these sensors are points that shoot out a ray 10 meters in a direction.The value of each sensor will be the distance in centimeters the ray took to hit something, or -1 if it didn't hit anything. The return data of the 165 command above will actually be a list of 13 float values instead of the normal 1 float. Here is a description of each sensor in order:
+
+| Sensor index | Unreal Sensor Coordinates                |  Sensor location description | Sensor Orientation |
+| ------------ | ---------------------------------------- | ---------------------------- | ------------------ |
+| 0            | (X=170.000000,Y=-150.000000,Z=15.000000) | Hub of the front left wheel | Yawed 30 degrees left (CCW) of vehicle forward | 
+| 1            | (X=200.000000,Y=-40.000000,Z=20.000000) | Front left of vehicle frame | Yawed 20 degrees left (CCW) of vehicle forward | 
+| 2            | (X=200.000000,Y=0.000000,Z=20.000000) | Front center of vehicle frame | Vehicle forward | 
+| 3            | (X=200.000000,Y=40.00000,Z=20.000000) | Front right of vehicle frame | Yawed 20 degrees right (CW) of vehicle forward | 
+| 4            | (X=170.000000,Y=150.000000,Z=15.000000) | Hub of front right wheel | Yawed 30 degrees right (CW) of vehicle forward | 
+| 5            | (X=200.000000,Y=-40.000000,Z=20.000000) | Front left of vehicle frame | Pitched 25 degrees down of vehicle forward | 
+| 6            | (X=200.000000,Y=40.000000,Z=20.000000) | Front right of vehicle frame | Pitched 25 degrees down of vehicle forward | 
+| 7            | (X=0.000000,Y=-100.000000,Z=-0.000000) | Center Left of vehicle frame | Pitched 20 degrees down of vehicle left | 
+| 8            | (X=0.000000,Y=100.000000,Z=-0.000000) | Center Right of vehicle frame | Pitched 20 degrees down of vehicle right | 
+| 9            | (X=-135.000000,Y=-160.000000,Z=15.000000) | Hub of back left wheel | Yawed 40 degrees left (CW) of vehicle backwards | 
+| 10           | (X=-180.000000,Y=-60.000000,Z=15.000000) | Rear left of vehicle frame | Vehicle backwards | 
+| 11           | (X=-180.000000,Y=60.000000,Z=15.000000) | Rear right of vehicle frame | Vehicle backwards | 
+| 12           | (X=-135.000000,Y=160.000000,Z=15.000000) | Hub of back right wheel | Yawed 40 degrees right (CCW) of vehicle backwards | 
+## Pressurized Rover Commanding
+
+Commanding the PR is also done through the same socket connection with the same command format. Here are the relevant command numbers
+
+| Command number | Command     | Data input     |
+| -------------- | -------     | ---------      |
+| 1107           | Brakes      | float: 0 or 1    |
+| 1109           | Throttle    | float: -100, 100 |
+| 1110           | Steering    | float: -1.0, 1.0 |
