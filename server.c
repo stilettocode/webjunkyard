@@ -251,8 +251,8 @@ int main(int argc, char* argv[])
             char data[4] = {0};
 
             get_contents(client->udp_request, &time, &command, data);
-            
-            #ifdef TESTING_MODE
+
+           #ifdef TESTING_MODE
                 printf("\nNew datagram received.\n");
 
                 printf("time: %d, ", time);
@@ -323,7 +323,7 @@ int main(int argc, char* argv[])
                 
 #ifdef VERBOSE_MODE
                 printf("Received a POST request from %s:%d \n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-#endif
+#endif          
                 handle_udp_post_request(command, data, client->udp_request, backend, received_bytes);
 
                 drop_udp_client(&udp_clients, client);
@@ -335,9 +335,9 @@ int main(int argc, char* argv[])
                 unreal_addr_len = client->address_length;
                 unreal = true;
 
-                #ifdef TESTING_MODE
+                //#ifdef TESTING_MODE
                     printf("Unreal address set to %s:%d\n", inet_ntoa(client->udp_addr.sin_addr), ntohs(client->udp_addr.sin_port));
-                #endif
+                //#endif
 
                 drop_udp_client(&udp_clients, client);
             }

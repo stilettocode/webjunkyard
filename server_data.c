@@ -2391,8 +2391,6 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
 bool udp_get_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 119;
 
-    printf("get friggen got nerd \n");
-
     if(off_set > 45){
         printf("Not yet implemented.\n");
         return false;
@@ -2632,10 +2630,6 @@ bool udp_post_pr_telemetry(unsigned int command, unsigned char* data, struct bac
     
     int off_set = command - 1103;
 
-    if (command == 1108) {
-        reverse_bytes(data);
-    }
-
     if(off_set > 23){
         printf("Command not valid.\n");
         return false;
@@ -2674,17 +2668,18 @@ void udp_post_pr_lidar(char* request, struct backend_data_t* backend, int receiv
             reverse_bytes(lidar + 4*i);
         }
         memcpy(&backend->p_rover[backend->running_pr_sim].lidar[i], lidar + 4*i, 4);
+
     }
 
-    /*
-    printf("lidar arr: ");
-    for(int i = 0; i < total_floats; i++){
-        printf("%f, ", backend->p_rover.lidar[i]);
-    }
-    printf("\n");
+    
+    // printf("lidar arr: ");
+    // for(int i = 0; i < total_floats; i++){
+    //     printf("%f, ", backend->p_rover[backend->running_pr_sim].lidar[i]);
+    // }
+    // printf("\n");
 
-    printf("first: %f\n", backend->p_rover.lidar[0]);
-    */
+    // printf("first: %f\n", backend->p_rover[backend->running_pr_sim].lidar[0]);
+    
     
 }
 
