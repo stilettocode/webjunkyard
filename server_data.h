@@ -304,6 +304,9 @@ struct pr_data_t {
     float dest_x;
     float dest_y;
     float dest_z;
+
+    float latitude;
+    float longitude;
 };
 
 struct pr_sim_data_t {

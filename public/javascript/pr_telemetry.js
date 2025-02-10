@@ -196,6 +196,8 @@ function loadPR_Telemetry(team){
         let dest_y = data.pr_telemetry.dest_y;
         let dest_z = data.pr_telemetry.dest_z;
 
+        let lat = data.pr_telemetry.latitude;
+        let lon = data.pr_telemetry.longitude;
 
         // PR Positioning
         document.getElementById("throttle").innerText = throttle.toFixed(2) + " %";
@@ -236,6 +238,9 @@ function loadPR_Telemetry(team){
         document.getElementById("dest_x").innerText = dest_x.toFixed(2);
         document.getElementById("dest_y").innerText = dest_y.toFixed(2);
         document.getElementById("dest_z").innerText = dest_z.toFixed(2);
+        
+        document.getElementById("latitude").innerText = lat.toFixed(2);
+        document.getElementById("longitude").innerText = lon.toFixed(2);
     });
 }
 

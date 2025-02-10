@@ -146,6 +146,14 @@ This server is based on "Network Programming in C" and builds off of the HTTPs e
 | ------------------ | ----------------------- | ------------ |
 | 4 bytes            | 4 bytes                 | 4 bytes      |
 
+The repsonse will be in a similar format, with the output data being in varying types (matching what you'll see in the json files mentioned below):
+
+| Timestamp (unit32) | Command number (uint32) | Output Data (variable)  |
+| ------------------ | ----------------------- | ------------ |
+| 4 bytes            | 4 bytes                 | 4 bytes      |
+
+Note the one exception to the above output is the PR's LIDAR data, which will instead return 13 floats for it's output data. This will be explained further below. 
+
 Here's a list of get commands you can send to the socket. They are mostly related to the json files in `public/json_data`, and will be listed as such. The command number order will match the order of data in the json file. 
 | Command number | Command                       | Referenced .json file|
 | -------------- | -------                       | --------- 
@@ -162,8 +170,8 @@ Here's a list of get commands you can send to the socket. They are mostly relate
 | 59-80        | Get TELEMETRY states for EVA1 and the team number passed in the data field as a float            | `/teams/x/TELEMTRY.json` |
 | 81-102        | Get TELEMETRY states for EVA1 and the team number passed in the data field as a float            | `/teams/x/TELEMTRY.json` |
 | 103-118        | Get EVA states for the team number passed in the data field as a float            | `/teams/x/EVA.json` |
-| 119-164        | Get Pressurized Rover states for the team currently running the PR sim | `/teams/x/ROVER_TELEMETRY.json` |
-| 165        | Get Pressurized Rover LIDAR data, explaned below | `/teams/x/ROVER_TELEMETRY.json` |
+| 119-166        | Get Pressurized Rover states for the team currently running the PR sim | `/teams/x/ROVER_TELEMETRY.json` |
+| 167        | Get Pressurized Rover LIDAR data, explaned below | `/teams/x/ROVER_TELEMETRY.json` |
 
 ## Pressurized Rover LIDAR
 The pressurized rover in the DUST simulation has 13 'LIDAR' sensors. Each of these sensors are points that shoot out a ray 10 meters in a direction.The value of each sensor will be the distance in centimeters the ray took to hit something, or -1 if it didn't hit anything. The return data of the 165 command above will actually be a list of 13 float values instead of the normal 1 float. Here is a description of each sensor in order:

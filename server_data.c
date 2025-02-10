@@ -72,7 +72,7 @@ void handle_udp_get_request(unsigned int command, unsigned char* data, struct ba
 
         udp_get_eva(command, team_number, data);
     }
-    else if(command < 165){
+    else if(command < 167){
         printf("Getting Rover Telemetry.\n");
 
         udp_get_pr_telemetry(command, data, backend);
@@ -1614,6 +1614,8 @@ bool build_json_pr_telemetry(struct pr_data_t* rover, int team_index, bool compl
     cJSON_AddItemToObject(pr_telemetry, "sim_running", cJSON_CreateBool(rover->sim_running));
     cJSON_AddItemToObject(pr_telemetry, "sim_paused", cJSON_CreateBool(rover->sim_paused));
     cJSON_AddItemToObject(pr_telemetry, "sim_completed", cJSON_CreateBool(rover->sim_completed));
+    cJSON_AddItemToObject(pr_telemetry, "latitude", cJSON_CreateNumber(rover->latitude));
+    cJSON_AddItemToObject(pr_telemetry, "longitude", cJSON_CreateNumber(rover->longitude));
 
     
     cJSON* lidar = cJSON_CreateArray();
@@ -2391,7 +2393,7 @@ bool udp_get_telemetry(unsigned int command, unsigned int team_number, unsigned 
 bool udp_get_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     int off_set = command - 119;
 
-    if(off_set > 45){
+    if(off_set > 47){
         printf("Not yet implemented.\n");
         return false;
     }
@@ -2630,7 +2632,7 @@ bool udp_post_pr_telemetry(unsigned int command, unsigned char* data, struct bac
     
     int off_set = command - 1103;
 
-    if(off_set > 23){
+    if(off_set > 25){
         printf("Command not valid.\n");
         return false;
     }
@@ -2827,7 +2829,9 @@ size_t rover_index(int idx){
         offsetof(struct pr_data_t, dest_z),
         offsetof(struct pr_data_t, fan_pri),
         offsetof(struct pr_data_t, internal_lights_on),
-        offsetof(struct pr_data_t, dust_wiper)
+        offsetof(struct pr_data_t, dust_wiper),
+        offsetof(struct pr_data_t, latitude),
+        offsetof(struct pr_data_t, longitude)
     };
 
     return offsets[idx];
