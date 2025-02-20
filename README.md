@@ -140,17 +140,20 @@ This is where you can monitor the state of the server, verify the display of you
 This server is based on "Network Programming in C" and builds off of the HTTPs example.
 
 ## UDP Socket communication
-* To communicate with the TSS over a UDP socket, connect to it's IP over port 14141 (it will output in the log when running). From there you can send a number of commands in the following format (in big endian): 
 
-| Timestamp (unit32) | Command number (uint32) | Input Data (float)  |
-| ------------------ | ----------------------- | ------------ |
-| 4 bytes            | 4 bytes                 | 4 bytes      |
+Commincation with the TSS is done via a UDP socket. To request data, send a message in the following format, all in big endian:
 
-The repsonse will be in a similar format, with the output data being in varying types (matching what you'll see in the json files mentioned below):
+| Timestamp (unit32) | Command number (uint32) | 
+| ------------------ | ----------------------- | 
+| 4 bytes            | 4 bytes                 |
+
+The timestamp is a UNIX timestamp, and the command numbers will be covered below. The socket will respond with a message of the following format:
 
 | Timestamp (unit32) | Command number (uint32) | Output Data (variable)  |
 | ------------------ | ----------------------- | ------------ |
 | 4 bytes            | 4 bytes                 | 4 bytes      |
+
+The command number will be the same one you sent, and the output data will either be an int32 or a float depending on the requested data. 
 
 Note the one exception to the above output is the PR's LIDAR data, which will instead return 13 floats for it's output data. This will be explained further below. 
 
@@ -193,7 +196,13 @@ The pressurized rover in the DUST simulation has 13 'LIDAR' sensors. Each of the
 | 12           | (X=-135.000000,Y=160.000000,Z=15.000000) | Hub of back right wheel | Yawed 40 degrees right (CCW) of vehicle backwards | 
 ## Pressurized Rover Commanding
 
-Commanding the PR is also done through the same socket connection with the same command format. Here are the relevant command numbers
+Commanding the PR is done through the same socket connection, using the following command format:
+
+| Timestamp (unit32) | Command number (uint32) | Input Data (float)  |
+| ------------------ | ----------------------- | ------------ |
+| 4 bytes            | 4 bytes                 | 4 bytes      |
+
+The timestamp is a UNIX timestamp, and all data is in big endian. Here are the command numbers you will use for commanding the rover:
 
 | Command number | Command     | Data input     |
 | -------------- | -------     | ---------      |
