@@ -133,7 +133,7 @@
   border-radius: 1rem;
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: nowrap;
   justify-content: center;
   flex-direction: row;

@@ -127,7 +127,7 @@
     padding-bottom: .5rem;
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: nowrap;
     justify-content: flex-start;
     flex-direction: row;
