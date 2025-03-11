@@ -22,7 +22,8 @@ size_t rover_index();
 void handle_udp_get_request(unsigned int command, unsigned char* data, struct backend_data_t* backend){
 
     if(command == 0){
-        printf("Invalid command.\n");
+        //Not sure why this is logging out all the time
+        //printf("Invalid command.\n");
     }
     else if(command < 2){
         printf("Getting COMM.\n");
