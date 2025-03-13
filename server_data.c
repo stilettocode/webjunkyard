@@ -11,12 +11,12 @@
 #include <time.h>
 
 
-#define ROVER_POI_1_X 1.000000
-#define ROVER_POI_1_Y 1.000000
-#define ROVER_POI_2_X 2.000000
-#define ROVER_POI_2_Y 2.000000
-#define ROVER_POI_3_X 3.000000
-#define ROVER_POI_3_Y 3.000000
+#define ROVER_POI_1_X -5635.00
+#define ROVER_POI_1_Y -9970.00
+#define ROVER_POI_2_X -5610.00
+#define ROVER_POI_2_Y -9971.00
+#define ROVER_POI_3_X -5615.00
+#define ROVER_POI_3_Y -9995.00
 
 // Helper functions
 size_t rover_index();

@@ -116,9 +116,15 @@ This is where you can monitor the state of the server, verify the display of you
 ### ROVER
 | Value   | Description               |
 | ------- | ------------------------- |
-| POSX    | Eastward UTM Coordinates  |
-| POSY    | Northward UTM Coordinates |
-| QR ID   | Last QR code read         |
+| POSX    | LTV Current X Coordinate  |
+| POSY    | LTV Current Y Coordinate  |
+| POI_1_X | LTV POI 1 X Coordinates   |
+| POI_1_Y | LTV POI 1 Y Coordinates   |
+| POI_2_X | LTV POI 2 X Coordinates   |
+| POI_2_Y | LTV POI 2 Y Coordinates   |
+| POI_3_X | LTV POI 3 X Coordinates   |
+| POI_3_Y | LTV POI 3 Y Coordinates   |
+| PING    | LTV PING                  |
 
 ### SPEC
 | Value   | Description                             |
