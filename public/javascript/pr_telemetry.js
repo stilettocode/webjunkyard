@@ -205,12 +205,12 @@ function loadPR_Telemetry(team){
         document.getElementById("current_pos_x").innerText = current_pos_x.toFixed(2);
         document.getElementById("current_pos_y").innerText = current_pos_y.toFixed(2);
         document.getElementById("current_pos_alt").innerText = current_pos_alt.toFixed(2);
-        document.getElementById("heading").innerText = heading.toFixed(2) + " rads";
-        document.getElementById("roll").innerText = roll.toFixed(2) + " rads";
-        document.getElementById("pitch").innerText = pitch.toFixed(2) + " rads";
+        document.getElementById("heading").innerText = heading.toFixed(2) + "°";
+        document.getElementById("roll").innerText = roll.toFixed(2) + "°";
+        document.getElementById("pitch").innerText = pitch.toFixed(2) + "°";
         document.getElementById("distance_traveled").innerText = distance_traveled.toFixed(2) + " m";
         document.getElementById("speed").innerText = speed.toFixed(2) + " m/s";
-        document.getElementById("surface_incline").innerText = surface_incline.toFixed(2) + " rads";
+        document.getElementById("surface_incline").innerText = surface_incline.toFixed(2) + "°";
         document.getElementById("oxygen_pressure").innerText = oxygen_pressure.toFixed(2) + " psi";
         document.getElementById("oxygen_levels").innerText = oxygen_levels.toFixed(2) + " %";
         document.getElementById("oxygen_tank").innerText = oxygen_tank.toFixed(2) + " %";
@@ -239,8 +239,8 @@ function loadPR_Telemetry(team){
         document.getElementById("dest_y").innerText = dest_y.toFixed(2);
         document.getElementById("dest_z").innerText = dest_z.toFixed(2);
         
-        document.getElementById("latitude").innerText = lat.toFixed(2);
-        document.getElementById("longitude").innerText = lon.toFixed(2);
+        document.getElementById("latitude").innerText = lat.toFixed(2) + "°";
+        document.getElementById("longitude").innerText = lon.toFixed(2) + "°";
     });
 }
 
