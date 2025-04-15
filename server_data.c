@@ -807,7 +807,7 @@ bool update_rover(char* request_content, struct rover_data_t* rover){
     } else if(strncmp(request_content, "posy=", strlen("posy=")) == 0) {
         request_content += strlen("posy=");
         rover->pos_y = atof(request_content);
-        printf("ROVER Pos x: %f\n", rover->pos_y);
+        printf("ROVER Pos y: %f\n", rover->pos_y);
     } else {
         return false;
     }
