@@ -464,4 +464,8 @@ void handle_udp_post_request(unsigned int command, char* data, char* request, st
 void reverse_bytes(unsigned char* bytes);
 bool big_endian();
 
+//Helper vars for calculating distance travelled
+float prPrevX;
+float prPrevY;
+
 #endif

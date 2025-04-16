@@ -1937,6 +1937,9 @@ bool update_pr_telemetry(char* request_content, struct backend_data_t* backend, 
         backend->p_rover[teamIndex].sim_running = true;
         backend->p_rover[teamIndex].sim_completed = false;
         backend->p_rover[teamIndex].sim_paused = false;
+        backend->p_rover[teamIndex].distance_traveled = 0;
+        prPrevX = 0;
+        prPrevY = 0;
         printf("Team %d PR Started\n", teamIndex);
     } else if(strncmp(request_content, "end_team=", strlen("end_team=")) == 0) {
         // End PR with current team
@@ -2629,6 +2632,32 @@ bool udp_get_eva(unsigned int command, unsigned int team_number, unsigned char* 
 bool udp_post_pr_telemetry(unsigned int command, unsigned char* data, struct backend_data_t* backend){
     if (backend->running_pr_sim < 0) {
         return false;
+    }
+
+    if (command == 1117) {
+        //Calculate distance traveled 
+        float distToAdd = 0;
+
+        if (prPrevX != 0 || prPrevY != 0) {
+            float xDiff = backend->p_rover[backend->running_pr_sim].current_pos_x - prPrevX;
+            float yDiff = backend->p_rover[backend->running_pr_sim].current_pos_y - prPrevY;
+
+            distToAdd = xDiff * xDiff + yDiff * yDiff;
+            distToAdd = sqrt(distToAdd);
+        } 
+
+        backend->p_rover[backend->running_pr_sim].distance_traveled += distToAdd;
+
+        prPrevX = backend->p_rover[backend->running_pr_sim].current_pos_x;
+        prPrevY = backend->p_rover[backend->running_pr_sim].current_pos_y;
+
+        //Calulcate distance from base here as well
+        //Base coords: -5663.90 -10080.10
+        float xDiff = backend->p_rover[backend->running_pr_sim].current_pos_x - (-5663.90);
+        float yDiff = backend->p_rover[backend->running_pr_sim].current_pos_y - (-10080.10);
+        backend->p_rover[backend->running_pr_sim].distance_from_base = sqrt(xDiff * xDiff + yDiff * yDiff);
+
+        return true;
     }
     
     int off_set = command - 1103;
