@@ -110,9 +110,9 @@
 #define PR_FAN_RPM 30000.0f
 
 //Other
-#define exp7           10000000i64   //1E+7     
-#define exp9         1000000000i64   //1E+9
-#define w2ux 116444736000000000i64   //1.jan1601 to 1.jan1970
+#define exp7           10000000i64    //1E+7     
+#define exp9         1000000000i64     //1E+9
+#define w2ux 116444736000000000i64     //1.jan1601 to 1.jan1970
 
 //
 
@@ -471,7 +471,7 @@ void reverse_bytes(unsigned char* bytes);
 bool big_endian();
 
 //Helper vars for calculating distance travelled
-float prPrevX;
-float prPrevY;
+extern float prPrevX;
+extern float prPrevY;
 
 #endif
