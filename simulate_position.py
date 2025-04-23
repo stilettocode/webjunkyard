@@ -54,27 +54,27 @@ def simulate_pos():
     while True:
         #
         print("Position: ", pairs[i])
-        roverDataX = {'rover_posx': pairs[i][1]} #X correspnds to longitude which is 2nd
-        roverDataY = {'rover_posy': pairs[i][0]} #Y corresponds to latitude which is 1st
+        rover_data_x = {'rover_posx': pairs[i][1]} #X correspnds to longitude which is 2nd
+        rover_data_y = {'rover_posy': pairs[i][0]} #Y corresponds to latitude which is 1st
 
-        eva1DataX = {'imu_eva1_posx': pairs[i][1]} #X correspnds to longitude which is 2nd
-        eva1DataY = {'imu_eva1_posy': pairs[i][0]} #Y corresponds to latitude which is 1st
+        eva1_data_x = {'imu_eva1_posx': pairs[i][1]} #X correspnds to longitude which is 2nd
+        eva1_data_y = {'imu_eva1_posy': pairs[i][0]} #Y corresponds to latitude which is 1st
 
-        eva2DataX = {'imu_eva2_posx': pairs[i][1]} #X correspnds to longitude which is 2nd
-        eva2DataY = {'imu_eva2_posy': pairs[i][0]} #Y corresponds to latitude which is 1st
+        eva2_data_x = {'imu_eva2_posx': pairs[i][1]} #X correspnds to longitude which is 2nd
+        eva2_data_y = {'imu_eva2_posy': pairs[i][0]} #Y corresponds to latitude which is 1st
 
 
         #send the rover data to TSS
-        r = requests.post(url = server, data = roverDataX, timeout = 3)
-        r = requests.post(url = server, data = roverDataY, timeout = 3)
+        r = requests.post(url = server, data = rover_data_x, timeout = 3)
+        r = requests.post(url = server, data = rover_data_y, timeout = 3)
 
         #send eva1 data to TSS
-        r = requests.post(url = server, data = eva1DataX, timeout = 3)
-        r = requests.post(url = server, data = eva1DataY, timeout = 3)
+        r = requests.post(url = server, data = eva1_data_x, timeout = 3)
+        r = requests.post(url = server, data = eva1_data_y, timeout = 3)
         
         #send eva2 data to TSS
-        r = requests.post(url = server, data = eva2DataX, timeout = 3)
-        r = requests.post(url = server, data = eva2DataY, timeout = 3)
+        r = requests.post(url = server, data = eva2_data_x, timeout = 3)
+        r = requests.post(url = server, data = eva2_data_y, timeout = 3)
 
         #go back to start once were at the end if not just increment
         i = 0 if i == len(pairs) - 1 else i + 1
