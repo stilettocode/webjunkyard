@@ -113,6 +113,15 @@ This is where you can monitor the state of the server, verify the display of you
 | POSY    | Northward UTM Coordinates |
 | HEADING | Direction Facing          |
 
+If you would like to test your code with simulated position values, there is a script you can
+run by typing
+
+```
+python simulate_position.py <your_ip_address>
+```
+
+Where your ip address is the ip address of the machine that is running TSS
+
 ### ROVER
 | Value   | Description               |
 | ------- | ------------------------- |
