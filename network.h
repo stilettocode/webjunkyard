@@ -13,7 +13,7 @@
     #include <WS2tcpip.h>
     #pragma comment(lib, "ws2_32.lib")
     #pragma comment(lib, "iphlpapi.lib")
-
+    typedef int socklen_t;
 
     #define ISVALIDSOCKET(s) ((s) != INVALID_SOCKET)
     #define CLOSESOCKET(s) closesocket(s)
@@ -35,6 +35,8 @@
     #define GETSOCKETERRNO() (errno)
 #endif
 
+#include <time.h>
+#include <math.h>
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Structs
 ///////////////////////////////////////////////////////////////////////////////////
@@ -51,6 +53,7 @@ struct client_info_t {
     char udp_request[MAX_UDP_REQUEST_SIZE];
     int received;
     int message_size;
+    struct timespec* ts;
     struct client_info_t* next;
 };
 
@@ -89,3 +92,20 @@ void reset_client_request_buffer(struct client_info_t* client);
 void serve_resource(struct client_info_t* client, const char* path);
 
 
+struct client_info_t* client_constructor(struct client_info_t* client);
+
+int compare_clients(struct client_info_t* client1, struct client_info_t* client2);
+
+int get_client_index(struct client_info_t* client);
+
+int add_client(struct client_info_t* client);
+
+struct timespec* update_client_time(struct client_info_t* client);
+
+double time_difference(struct timespec *time1, struct timespec *time2);
+
+int rate_limit_required(struct client_info_t* client);
+
+struct client_info_t* get_recent_client(int index);
+
+void send_rate_limited_response(int client_socket);

@@ -211,7 +211,6 @@ int main(int argc, char* argv[])
 
     // Client connection Data
     struct client_info_t* clients = NULL;
-    
     //////////////////////////////////////////////////////////////////// Server /////////////////////////////////////////////////////////////////////////////////
     while(true){
         fd_set reads;
@@ -220,7 +219,6 @@ int main(int argc, char* argv[])
         // Server Listen Socket got a new message
         if(FD_ISSET(server, &reads)){
 
-            // create a new client
             struct client_info_t* client = get_client(&clients, -1);
 
             // create client socket
@@ -228,6 +226,28 @@ int main(int argc, char* argv[])
             if(!ISVALIDSOCKET(client->socket)){
                 fprintf(stderr, "accept() failed with error: %d", GETSOCKETERRNO());
             }
+            
+            int client_index = get_client_index(client); //check if our client is new or not
+            
+            if(client_index == -1) { //case that client isnt stored yet
+                
+                //add it to our list and then update its time
+                add_client(client);
+                update_client_time(client);
+            } else { //case that it is stored
+
+                if(rate_limit_required(client)) { //if we need to rate limit we dont update the time
+                    printf("Rate Limit!\n");
+                    send_rate_limited_response(client->socket);
+                    
+                } else {
+
+                    //otherwise the client is able to send so we just update its time to now
+                    update_client_time(client);
+                }
+
+            }
+  
 
             #ifdef VERBOSE_MODE
             if(strcmp(get_client_address(client), hostname)){
@@ -237,6 +257,8 @@ int main(int argc, char* argv[])
             #endif
 
         }
+
+
 
         // Handle UDP
         if(FD_ISSET(udp_socket, &reads)){
