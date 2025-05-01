@@ -255,15 +255,16 @@ int main(int argc, char* argv[])
                 //add it to our list and then update its time
                 add_client(client);
                 update_client_time(client);
+
             } else { //case that it is stored
 
                 if(rate_limit_required(client)) { //if we need to rate limit we dont update the time
-                    printf("Rate Limit!\n");
-                    continue;
                     
+                    printf("Rate Limit hit\n");
+                    continue; //this drops the udp message
                 } else {
 
-                    //otherwise the client is able to send so we just update its time to now
+                    //otherwise the client is able to send so we just update its' time
                     update_client_time(client);
                 }
 

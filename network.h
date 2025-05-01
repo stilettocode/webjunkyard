@@ -107,5 +107,3 @@ double time_difference(struct timespec *time1, struct timespec *time2);
 int rate_limit_required(struct client_info_t* client);
 
 struct client_info_t* get_recent_client(int index);
-
-void send_rate_limited_response(int client_socket);

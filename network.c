@@ -9,11 +9,12 @@
 #include <stdlib.h>
 
 
-
+//variables for rate limiting 
 #define RECENT_CLIENT_CAPACITY 100
 #define RATE_LIMIT_THRESHOLD 0.5
 
 struct client_info_t* recent_clients[RECENT_CLIENT_CAPACITY] = {0}; //global circular buffer
+//pointers for buffer
 int lru_index = 0;
 int recent_client_size = 0;
 ///////////////////////////////////////////////////////////////////////////////////
@@ -475,9 +476,7 @@ struct client_info_t* client_constructor(struct client_info_t* client) {
 right now the code just checks whether or not 
 sockets use the same IP, this can be changed tho*/
 int compare_clients(struct client_info_t* client1, struct client_info_t* client2 ) {
-    //printf("Entered compare_clients()\n");
     if(!client1 || !client2) {
-        printf("client1 or client2 are null!\n");
         return 0;
     }
 
@@ -493,9 +492,7 @@ int compare_clients(struct client_info_t* client1, struct client_info_t* client2
         struct sockaddr_in* addr2 = (struct sockaddr_in*)&client2->udp_addr;
 
         //compare ipv4 addresses
-        /*printf("Comparing IPs: %s vs %s\n", 
-            inet_ntoa(addr1->sin_addr), 
-            inet_ntoa(addr2->sin_addr));*/
+
         if(addr1->sin_addr.s_addr == addr2->sin_addr.s_addr) {
             return 1;  
         }
@@ -551,7 +548,6 @@ int get_client_index(struct client_info_t* client) {
 /*This function adds a client to the recent clients buffer and returns whether or not it
 was successfull*/
 int add_client(struct client_info_t* client) {
-    printf("Entered add_client()\n");
     if (!client) { //if its null its not successful unfortnuately
         return 0;
     }
@@ -562,7 +558,6 @@ int add_client(struct client_info_t* client) {
         lru_index = (lru_index + 1) % RECENT_CLIENT_CAPACITY; //super beautiful
 
     } else { //otherwise we just add it to our buffer
-        printf("Making new client: %d\n", recent_client_size);
         recent_clients[recent_client_size] = client_constructor(client);
         recent_client_size++;
     }
@@ -573,7 +568,6 @@ int add_client(struct client_info_t* client) {
 
 /*Updates client time to new time (cause they just sent another message) and returns new time*/
 struct timespec* update_client_time(struct client_info_t* client) {
-    printf("Entered update_client_time()\n");
     //make new timespec
     
     client->ts = malloc(sizeof(struct timespec));
@@ -588,7 +582,6 @@ struct timespec* update_client_time(struct client_info_t* client) {
     if(client_index != -1) {
         recent_clients[client_index] = client_constructor(client);
     } else {
-        printf("Not found in recents\n");
         return NULL;
     }
 
@@ -644,33 +637,4 @@ double time_difference(struct timespec *time1, struct timespec *time2) {
 /*grabs the client given the index in the buffer*/
 struct client_info_t* get_recent_client(int index) {
     return recent_clients[index];
-}
-
-
-
-
-
-void send_rate_limited_response(int client_socket) {
-    //grab current time rq
-    time_t current_time = time(NULL);
-    
-    //get the time at which they can send another msg
-    time_t reset_time = current_time + RATE_LIMIT_THRESHOLD;
-
-    //our header
-    char response[1024];
-    snprintf(response, sizeof(response),
-        "HTTP/1.1 429 Too Many Requests\r\n"
-        "Content-Type: application/json\r\n"
-        "X-RateLimit-Limit: 100\r\n"
-        "X-RateLimit-Remaining: 0\r\n"
-        "X-RateLimit-Reset: %ld\r\n"
-        "\r\n"
-        "{\n"
-        "  \"error\": \"Rate limit exceeded\",\n"
-        "  \"message\": \"You have exceeded the maximum number of requests. Please try again later.\"\n"
-        "}\r\n", reset_time);
-
-    //send it to the client
-    send(client_socket, response, strlen(response), 0);
 }
