@@ -45,6 +45,8 @@ pairs = [(-10033.67, -5673.19),
  (-10032.39, -5673.09),
  (-10033.67, -5673.19)]
 
+
+TIMEOUT_TIME = 4
 server = "http://" + sys.argv[1] + ":14141"
 
 
@@ -63,24 +65,24 @@ def simulate_pos():
         eva2_data_x = {'imu_eva2_posx': pairs[i][1]} #X correspnds to longitude which is 2nd
         eva2_data_y = {'imu_eva2_posy': pairs[i][0]} #Y corresponds to latitude which is 1st
 
-
         #send the rover data to TSS
-        r = requests.post(url = server, data = rover_data_x, timeout = 3)
-        r = requests.post(url = server, data = rover_data_y, timeout = 3)
+        r = requests.post(url = server, data = rover_data_x, timeout = TIMEOUT_TIME)
+        time.sleep(1)
+        r = requests.post(url = server, data = rover_data_y, timeout = TIMEOUT_TIME)
 
         #send eva1 data to TSS
-        r = requests.post(url = server, data = eva1_data_x, timeout = 3)
-        r = requests.post(url = server, data = eva1_data_y, timeout = 3)
+        r = requests.post(url = server, data = eva1_data_x, timeout = TIMEOUT_TIME)
+        r = requests.post(url = server, data = eva1_data_y, timeout = TIMEOUT_TIME)
         
         #send eva2 data to TSS
-        r = requests.post(url = server, data = eva2_data_x, timeout = 3)
-        r = requests.post(url = server, data = eva2_data_y, timeout = 3)
+        r = requests.post(url = server, data = eva2_data_x, timeout = TIMEOUT_TIME)
+        r = requests.post(url = server, data = eva2_data_y, timeout = TIMEOUT_TIME)
 
         #go back to start once were at the end if not just increment
-        i = 0 if i == len(pairs) - 1 else i + 1
+        i = (i + 1) % len(pairs)
 
         #wait a little bit :)
-        time.sleep(1)
+        time.sleep(0.55)
 
 
 #run script

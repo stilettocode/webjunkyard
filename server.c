@@ -227,6 +227,27 @@ int main(int argc, char* argv[])
                 fprintf(stderr, "accept() failed with error: %d", GETSOCKETERRNO());
             }
             
+            
+
+            #ifdef VERBOSE_MODE
+            if(strcmp(get_client_address(client), hostname)){
+                printf("New Connection from %s\n", get_client_address(client));
+
+            }
+            #endif
+
+        }
+
+
+
+        // Handle UDP
+        if(FD_ISSET(udp_socket, &reads)){
+            struct client_info_t* udp_clients = NULL;
+            struct client_info_t* client = get_client(&udp_clients, -1);
+
+            int received_bytes = recvfrom(udp_socket, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
+
+
             int client_index = get_client_index(client); //check if our client is new or not
             
             if(client_index == -1) { //case that client isnt stored yet
@@ -249,24 +270,7 @@ int main(int argc, char* argv[])
             }
   
 
-            #ifdef VERBOSE_MODE
-            if(strcmp(get_client_address(client), hostname)){
-                printf("New Connection from %s\n", get_client_address(client));
-
-            }
-            #endif
-
-        }
-
-
-
-        // Handle UDP
-        if(FD_ISSET(udp_socket, &reads)){
-            struct client_info_t* udp_clients = NULL;
-            struct client_info_t* client = get_client(&udp_clients, -1);
-
-            int received_bytes = recvfrom(udp_socket, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
-
+            
             if(!big_endian()){
                 reverse_bytes(client->udp_request);
                 reverse_bytes(client->udp_request + 4);
