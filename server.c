@@ -259,7 +259,7 @@ int main(int argc, char* argv[])
 
                 if(rate_limit_required(client)) { //if we need to rate limit we dont update the time
                     printf("Rate Limit!\n");
-                    send_rate_limited_response(client->socket);
+                    continue;
                     
                 } else {
 

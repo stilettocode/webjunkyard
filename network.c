@@ -475,23 +475,27 @@ struct client_info_t* client_constructor(struct client_info_t* client) {
 right now the code just checks whether or not 
 sockets use the same IP, this can be changed tho*/
 int compare_clients(struct client_info_t* client1, struct client_info_t* client2 ) {
+    //printf("Entered compare_clients()\n");
     if(!client1 || !client2) {
         printf("client1 or client2 are null!\n");
         return 0;
     }
 
-    if(client1->address.ss_family != client2->address.ss_family) {
+    if(client1->udp_addr.sin_family != client2->udp_addr.sin_family) {
         //if one is ipv4 and the other is ipv6 they are not the same
         return 0;
     }
 
-    if(client1->address.ss_family == AF_INET) { //checks if both clients are IPV4
+    if(client1->udp_addr.sin_family == AF_INET) { //checks if both clients are IPV4
 
         //special struct just for ipv4
-        struct sockaddr_in* addr1 = (struct sockaddr_in*)&client1->address;
-        struct sockaddr_in* addr2 = (struct sockaddr_in*)&client2->address;
+        struct sockaddr_in* addr1 = (struct sockaddr_in*)&client1->udp_addr;
+        struct sockaddr_in* addr2 = (struct sockaddr_in*)&client2->udp_addr;
 
         //compare ipv4 addresses
+        /*printf("Comparing IPs: %s vs %s\n", 
+            inet_ntoa(addr1->sin_addr), 
+            inet_ntoa(addr2->sin_addr));*/
         if(addr1->sin_addr.s_addr == addr2->sin_addr.s_addr) {
             return 1;  
         }
@@ -502,11 +506,11 @@ int compare_clients(struct client_info_t* client1, struct client_info_t* client2
             return 1;  
         }
 
-    } else if(client1->address.ss_family == AF_INET6){ //both must be IPV6
+    } else if(client1->udp_addr.sin_family == AF_INET6){ //both must be IPV6
 
         //special struct just for ipv6
-        struct sockaddr_in6* addr1 = (struct sockaddr_in6*)&client1->address;
-        struct sockaddr_in6* addr2 = (struct sockaddr_in6*)&client2->address;
+        struct sockaddr_in6* addr1 = (struct sockaddr_in6*)&client1->udp_addr;
+        struct sockaddr_in6* addr2 = (struct sockaddr_in6*)&client2->udp_addr;
         
         //now we compare ipv6
         if(!memcmp(&addr1->sin6_addr, &addr2->sin6_addr, sizeof(struct in6_addr))) {
@@ -547,6 +551,7 @@ int get_client_index(struct client_info_t* client) {
 /*This function adds a client to the recent clients buffer and returns whether or not it
 was successfull*/
 int add_client(struct client_info_t* client) {
+    printf("Entered add_client()\n");
     if (!client) { //if its null its not successful unfortnuately
         return 0;
     }
@@ -557,6 +562,7 @@ int add_client(struct client_info_t* client) {
         lru_index = (lru_index + 1) % RECENT_CLIENT_CAPACITY; //super beautiful
 
     } else { //otherwise we just add it to our buffer
+        printf("Making new client: %d\n", recent_client_size);
         recent_clients[recent_client_size] = client_constructor(client);
         recent_client_size++;
     }
@@ -567,6 +573,7 @@ int add_client(struct client_info_t* client) {
 
 /*Updates client time to new time (cause they just sent another message) and returns new time*/
 struct timespec* update_client_time(struct client_info_t* client) {
+    printf("Entered update_client_time()\n");
     //make new timespec
     
     client->ts = malloc(sizeof(struct timespec));
