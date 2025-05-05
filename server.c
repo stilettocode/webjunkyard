@@ -246,32 +246,6 @@ int main(int argc, char* argv[])
             struct client_info_t* client = get_client(&udp_clients, -1);
 
             int received_bytes = recvfrom(udp_socket, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
-
-
-            int client_index = get_client_index(client); //check if our client is new or not
-            
-            if(client_index == -1) { //case that client isnt stored yet
-                
-                //add it to our list and then update its time
-                add_client(client);
-                update_client_time(client);
-
-            } else { //case that it is stored
-
-                if(rate_limit_required(client)) { //if we need to rate limit we dont update the time
-                    
-                    printf("Rate Limit hit\n");
-                    continue; //this drops the udp message
-                } else {
-
-                    //otherwise the client is able to send so we just update its' time
-                    update_client_time(client);
-                }
-
-            }
-  
-
-            
             if(!big_endian()){
                 reverse_bytes(client->udp_request);
                 reverse_bytes(client->udp_request + 4);
@@ -283,6 +257,35 @@ int main(int argc, char* argv[])
             char data[4] = {0};
 
             get_contents(client->udp_request, &time, &command, data);
+            if(!((command >= 1100 && command <= 1130) || command == 3000)) {
+                printf("Command: %u\n", command);
+                
+                int client_index = get_client_index(client); //check if our client is new or not
+                
+                if(client_index == -1) { //case that client isnt stored yet
+                    
+                    //add it to our list and then update its time
+                    add_client(client);
+                    update_client_time(client);
+
+                } else { //case that it is stored
+
+                    if(rate_limit_required(client)) { //if we need to rate limit we dont update the time
+                        
+                        printf("Rate Limit hit\n");
+                        continue; //this drops the udp message
+                    } else {
+
+                        //otherwise the client is able to send so we just update its' time
+                        update_client_time(client);
+                    }
+
+                }
+            }
+  
+
+            
+            
 
            #ifdef TESTING_MODE
                 printf("\nNew datagram received.\n");
