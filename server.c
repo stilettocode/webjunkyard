@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
             char data[4] = {0};
 
             get_contents(client->udp_request, &time, &command, data);
-            if(!((command >= 1100 && command <= 1130) || command == 3000)) {
+            if(!((command >= 1100 && command <= 1130) || command == 3000 || command == 0)) {
                 printf("Command: %u\n", command);
                 
                 int client_index = get_client_index(client); //check if our client is new or not
