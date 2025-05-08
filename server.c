@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
                 int buffer_size = 0;
 
                 //Send lidar
-                if(command == 167 && backend->running_pr_sim >= 0){
+                if(command == 172 && backend->running_pr_sim >= 0){
                     response_buffer = malloc(sizeof(backend->p_rover[backend->running_pr_sim].lidar) + 8);
                     buffer_size = sizeof(backend->p_rover[backend->running_pr_sim].lidar) + 8;
 

@@ -192,7 +192,7 @@ Here's a list of get commands you can send to the socket. They are mostly relate
 | 172        | Get Pressurized Rover LIDAR data, explaned below | `/teams/x/ROVER_TELEMETRY.json` |
 
 ## Pressurized Rover LIDAR
-The pressurized rover in the DUST simulation has 13 'LIDAR' sensors. Each of these sensors are points that shoot out a ray 10 meters in a direction.The value of each sensor will be the distance in centimeters the ray took to hit something, or -1 if it didn't hit anything. The return data of the 165 command above will actually be a list of 13 float values instead of the normal 1 float. Here is a description of each sensor in order:
+The pressurized rover in the DUST simulation has 13 'LIDAR' sensors. Each of these sensors are points that shoot out a ray 10 meters in a direction.The value of each sensor will be the distance in centimeters the ray took to hit something, or -1 if it didn't hit anything. The return data of the 172 command above will actually be a list of 13 float values instead of the normal 1 float. Here is a description of each sensor in order:
 
 | Sensor index | Unreal Sensor Coordinates                |  Sensor location description | Sensor Orientation |
 | ------------ | ---------------------------------------- | ---------------------------- | ------------------ |
