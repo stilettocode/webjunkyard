@@ -49,6 +49,8 @@ enum { NS_PER_SECOND = 1000000000 };
 
 int main(int argc, char* argv[])
 {
+
+    int set_dust_rate;
     printf("Hello World\n\n");
 
     clock_setup(&profile_context);
@@ -214,12 +216,22 @@ int main(int argc, char* argv[])
             unsigned int time = 0;
             unsigned int command = 0;
             char data[4] = {0};
+            char* dust_ip = "192.168.51.201";
+            
+      
+            printf("UDP IP: %s\n", get_client_udp_address(client));
 
             get_contents(client->udp_request, &time, &command, data);
-            if(!((command >= 1100 && command <= 1130) || command == 3000 || command == 0)) {
-                printf("Command: %u\n", command);
+
+            //if(!((command >= 1100 && command <= 1130) || command == 3000 || command == 0)) {
+            if((strcmp(get_client_udp_address(client), dust_ip) != 0)){
+                printf("Command: %d\n", command);
                 
                 int client_index = get_client_index(client); //check if our client is new or not
+
+                if (!client) {
+                    fprintf(stderr, "[ERROR] NULL client passed to rate_limit_required\n");
+                }
                 
                 if(client_index == -1) { //case that client isnt stored yet
                     
@@ -228,14 +240,14 @@ int main(int argc, char* argv[])
                     update_client_time(client);
 
                 } else { //case that it is stored
-                    if (!client) {
-                        fprintf(stderr, "[ERROR] NULL client passed to rate_limit_required\n");
-                    }
 
-                    if(rate_limit_required(client)) { //if we need to rate limit we dont update the time
+                    set_dust_rate = (((command >= 1100 && command <= 1130) || command == 3000 || command == 0)) ? 0 : 1; //if we are getting a dust command we set the rate to 0, otherwise we set it to 1
+                    
+                    if(rate_limit_required(client, set_dust_rate)) { //if we need to rate limit we dont update the time
                         
                         printf("Rate Limit hit\n");
                         continue; //this drops the udp message
+
                     } else {
 
                         //otherwise the client is able to send so we just update its' time

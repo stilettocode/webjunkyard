@@ -11,8 +11,8 @@
 
 //variables for rate limiting 
 #define RECENT_CLIENT_CAPACITY 100
-#define RATE_LIMIT_THRESHOLD 0.5
-
+#define RATE_LIMIT_THRESHOLD 0.50f
+#define RATE_LIMIT_THRESHOLD_DUST 0.10f //seconds
 
 struct client_info_t* recent_clients[RECENT_CLIENT_CAPACITY] = {0}; //global circular buffer
 //pointers for buffer
@@ -306,6 +306,12 @@ void drop_client(struct client_info_t** clients, struct client_info_t* client){
 const char* get_client_address(struct client_info_t* client){
     static char address_buffer[100];
     getnameinfo((struct sockaddr*) &client->address, client->address_length, address_buffer, sizeof(address_buffer), 0, 0, NI_NUMERICHOST);
+    return address_buffer;
+}
+
+const char* get_client_udp_address(struct client_info_t* client){
+    static char address_buffer[100];
+    getnameinfo((struct sockaddr*) &client->udp_addr, client->address_length, address_buffer, sizeof(address_buffer), 0, 0, NI_NUMERICHOST);
     return address_buffer;
 }
 
@@ -614,7 +620,11 @@ double update_client_time(struct client_info_t* client) {
 }
 
 //returns whether or not the client has sent a message within last threshold
-int rate_limit_required(struct client_info_t* client) {
+int rate_limit_required(struct client_info_t* client, int dust_rate){
+
+    float rate = (dust_rate == 0) ? RATE_LIMIT_THRESHOLD_DUST : RATE_LIMIT_THRESHOLD; //seconds
+
+    printf("rate limit: %f\n", rate);
     double time_now = get_wall_clock(&profile_context);
     int idx = get_client_index(client);
     if (idx == -1) {
@@ -625,7 +635,7 @@ int rate_limit_required(struct client_info_t* client) {
     double last = recent_clients[idx]->last_request_time;
     double diff = time_now - last;
 
-    return diff <= RATE_LIMIT_THRESHOLD;
+    return diff <= rate;
 }
 
 struct client_info_t* get_recent_client(int index) {

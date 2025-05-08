@@ -71,6 +71,7 @@ struct client_info_t* get_client(struct client_info_t** clients, SOCKET socket);
 void drop_udp_client(struct client_info_t** clients, struct client_info_t* client);
 void drop_client(struct client_info_t** clients, struct client_info_t* client);
 const char* get_client_address(struct client_info_t* client);
+const char* get_client_udp_address(struct client_info_t* client);
 fd_set wait_on_clients(struct client_info_t* clients, SOCKET server, SOCKET udp_socket);
 void send_400(struct client_info_t* client);
 void send_404(struct client_info_t* client);
@@ -83,7 +84,7 @@ int compare_clients(struct client_info_t* client1, struct client_info_t* client2
 int get_client_index(struct client_info_t* client);
 int add_client(struct client_info_t* client);
 double update_client_time(struct client_info_t* client);
-int rate_limit_required(struct client_info_t* client);
+int rate_limit_required(struct client_info_t* client, int dust_rate);
 struct client_info_t* get_recent_client(int index);
 
 ///////////////////////////////////////////////////////////////////////////////////
