@@ -7,11 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <time.h>
+//#include <time.h>
 #include "cJSON.h"
 
 // Networking Headers
 #include "network.h"
+struct profile_context_t profile_context;
 
 // Application
 #include "server_data.h"
@@ -28,36 +29,6 @@
 // Uncomment this for extra print statements
 //#define VERBOSE_MODE 
 //#define TESTING_MODE
-
-///////////////////////////////////////////////////////////////////////////////////
-//                          Windows Functions
-///////////////////////////////////////////////////////////////////////////////////
-
-
-#if defined(_WIN32)
-//This is from https://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows
-void unix_time(struct timespec *spec)
-{  __int64 wintime; GetSystemTimeAsFileTime((FILETIME*)&wintime); 
-   wintime -=w2ux;  spec->tv_sec  =wintime / exp7;                 
-                    spec->tv_nsec =wintime % exp7 *100;
-}
-int clock_gettime(int fake, struct timespec *spec)
-{  static  struct timespec startspec; static double ticks2nano;
-   static __int64 startticks, tps =0;    __int64 tmp, curticks;
-   QueryPerformanceFrequency((LARGE_INTEGER*)&tmp); //some strange system can
-   if (tps !=tmp) { tps =tmp; //init ~~ONCE         //possibly change freq ?
-                    QueryPerformanceCounter((LARGE_INTEGER*)&startticks);
-                    unix_time(&startspec); ticks2nano =(double)exp9 / tps; }
-   QueryPerformanceCounter((LARGE_INTEGER*)&curticks); curticks -=startticks;
-   spec->tv_sec  =startspec.tv_sec   +         (curticks / tps);
-   spec->tv_nsec =startspec.tv_nsec  + (double)(curticks % tps) * ticks2nano;
-         if (!(spec->tv_nsec < exp9)) { spec->tv_sec++; spec->tv_nsec -=exp9; }
-   return 0;
-}
-
-#define CLOCK_REALTIME 0
-#endif
-
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -76,25 +47,11 @@ void tss_to_unreal();
 
 enum { NS_PER_SECOND = 1000000000 };
 
-void sub_timespec(struct timespec t1, struct timespec t2, struct timespec *td)
-{
-    td->tv_nsec = t2.tv_nsec - t1.tv_nsec;
-    td->tv_sec  = t2.tv_sec - t1.tv_sec;
-    if (td->tv_sec > 0 && td->tv_nsec < 0)
-    {
-        td->tv_nsec += NS_PER_SECOND;
-        td->tv_sec--;
-    }
-    else if (td->tv_sec < 0 && td->tv_nsec > 0)
-    {
-        td->tv_nsec -= NS_PER_SECOND;
-        td->tv_sec++;
-    }
-}
-
 int main(int argc, char* argv[])
 {
     printf("Hello World\n\n");
+
+    clock_setup(&profile_context);
 
     // Windows Specific Init
     #if defined(_WIN32)
@@ -108,9 +65,11 @@ int main(int argc, char* argv[])
     FILE *fptr;
 
     // ----------------- Begin Main Program Space -------------------------
-    struct timespec time_begin, time_end, time_delta;
+    // struct timespec time_begin, time_end, time_delta;
 
-    clock_gettime(CLOCK_REALTIME, &time_begin);
+    double time_begin = get_wall_clock(&profile_context);
+
+    //clock_gettime(CLOCK_REALTIME, &time_begin);
 
     bool udp_only = false;
     bool protected_mode = false;
@@ -269,6 +228,9 @@ int main(int argc, char* argv[])
                     update_client_time(client);
 
                 } else { //case that it is stored
+                    if (!client) {
+                        fprintf(stderr, "[ERROR] NULL client passed to rate_limit_required\n");
+                    }
 
                     if(rate_limit_required(client)) { //if we need to rate limit we dont update the time
                         
@@ -384,13 +346,10 @@ int main(int argc, char* argv[])
         
         // Send telemetry values to Unreal if there's an address saved
         if(unreal){
-            clock_gettime(CLOCK_REALTIME, &time_end);
-            sub_timespec(time_begin, time_end, &time_delta);
-
-            if(time_delta.tv_nsec > 200000000){
+            double time_end = get_wall_clock(&profile_context);
+            if ((time_end - time_begin) > 0.2) {
                 tss_to_unreal(udp_socket, unreal_addr, unreal_addr_len, backend);
-                
-                clock_gettime(CLOCK_REALTIME, &time_begin);
+                time_begin = time_end;
             }
         }
 

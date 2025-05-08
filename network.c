@@ -13,10 +13,41 @@
 #define RECENT_CLIENT_CAPACITY 100
 #define RATE_LIMIT_THRESHOLD 0.5
 
+
 struct client_info_t* recent_clients[RECENT_CLIENT_CAPACITY] = {0}; //global circular buffer
 //pointers for buffer
 int lru_index = 0;
 int recent_client_size = 0;
+
+// struct profile_context_t {
+//     void* pInternal;
+// };
+
+///////////////////////////////////////////////////////////////////////////////////
+//                                 Clock Functions
+///////////////////////////////////////////////////////////////////////////////////
+
+void clock_setup(struct profile_context_t* ptContext) {
+    #ifdef _WIN32
+        static LARGE_INTEGER perf_freq;
+        QueryPerformanceFrequency(&perf_freq);
+        ptContext->pInternal = &perf_freq;
+
+    #elif defined(__APPLE__)
+        ptContext->pInternal = NULL;
+
+    #else // Linux
+        static struct timespec ts;
+        if (clock_getres(CLOCK_MONOTONIC, &ts) != 0) {
+            fprintf(stderr, "clock_getres() failed\n");
+            exit(1);
+        }
+
+        static double dPerFrequency = 1e9 / ((double)ts.tv_nsec + (double)ts.tv_sec * 1e9);
+        ptContext->pInternal = &dPerFrequency;
+    #endif
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 //                                 Functions
 ///////////////////////////////////////////////////////////////////////////////////
@@ -443,6 +474,7 @@ struct client_info_t* client_constructor(struct client_info_t* client) {
     struct client_info_t* new_client = malloc(sizeof(struct client_info_t));
 
     //copy variables
+    new_client->last_request_time = client->last_request_time;
     new_client->address_length = client->address_length;
     new_client->address = client->address;
     new_client->udp_addr = client->udp_addr;
@@ -454,14 +486,14 @@ struct client_info_t* client_constructor(struct client_info_t* client) {
     memcpy(new_client->request, client->request, MAX_REQUEST_SIZE + 1);
     memcpy(new_client->udp_request, client->udp_request, MAX_UDP_REQUEST_SIZE);
 
-    //copy timestruct
-    if(client->ts) { //check that timespec exists before we allocate variables
-        new_client->ts = malloc(sizeof(struct timespec));
-        new_client->ts->tv_nsec = client->ts->tv_nsec;
-        new_client->ts->tv_sec = client->ts->tv_sec;
-    } else {
-        new_client->ts = NULL;
-    }
+    // //copy timestruct
+    // if(client->ts) { //check that timespec exists before we allocate variables
+    //     new_client->ts = malloc(sizeof(struct timespec));
+    //     new_client->ts->tv_nsec = client->ts->tv_nsec;
+    //     new_client->ts->tv_sec = client->ts->tv_sec;
+    // } else {
+    //     new_client->ts = NULL;
+    // }
 
     //next isnt used in the context of rate limiting but setting it just in case
     new_client->next = client->next;
@@ -548,93 +580,54 @@ int get_client_index(struct client_info_t* client) {
 /*This function adds a client to the recent clients buffer and returns whether or not it
 was successfull*/
 int add_client(struct client_info_t* client) {
-    if (!client) { //if its null its not successful unfortnuately
-        return 0;
-    }
+    if (!client) return 0;  // null check first
 
-    //if the buffer has reached the maximum size we overwrite the least recently used client
-    if(recent_client_size == RECENT_CLIENT_CAPACITY) {
-        recent_clients[lru_index] = client_constructor(client);
-        lru_index = (lru_index + 1) % RECENT_CLIENT_CAPACITY; //super beautiful
+    double time_now = get_wall_clock(&profile_context);
+    struct client_info_t* new_client = client_constructor(client);
+    new_client->last_request_time = time_now;
 
-    } else { //otherwise we just add it to our buffer
-        recent_clients[recent_client_size] = client_constructor(client);
+    if (recent_client_size == RECENT_CLIENT_CAPACITY) {
+        recent_clients[lru_index] = new_client;
+        lru_index = (lru_index + 1) % RECENT_CLIENT_CAPACITY;
+    } else {
+        recent_clients[recent_client_size] = new_client;
         recent_client_size++;
     }
-    
-    
+
     return 1;
 }
 
 /*Updates client time to new time (cause they just sent another message) and returns new time*/
-struct timespec* update_client_time(struct client_info_t* client) {
-    //make new timespec
-    
-    client->ts = malloc(sizeof(struct timespec));
-    clock_gettime(CLOCK_REALTIME, client->ts);
+double update_client_time(struct client_info_t* client) {
+    if (!client) return -1;
 
-    
-    
-    //check where our client is in our buffer
+    double time_now = get_wall_clock(&profile_context);
+    client->last_request_time = time_now;
+
     int client_index = get_client_index(client);
-
-    //if its found we create a new copy (otherwise all this stuff gets messed up)
-    if(client_index != -1) {
+    if (client_index != -1) {
         recent_clients[client_index] = client_constructor(client);
-    } else {
-        return NULL;
+        recent_clients[client_index]->last_request_time = time_now;
     }
 
-    //return what we got!
-    return recent_clients[client_index]->ts;
+    return time_now;
 }
 
 //returns whether or not the client has sent a message within last threshold
 int rate_limit_required(struct client_info_t* client) {
-    //get current time so we can compare to when the last message was sent
-    struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
-
-    //where is our client in our buffer 
+    double time_now = get_wall_clock(&profile_context);
     int idx = get_client_index(client);
+    if (idx == -1) {
+        printf("client not found in recent_clients\n");
+        return 0;
+    }
 
-    //get the time difference and check if its lower than the allowed threshold
-    double diff = time_difference(recent_clients[idx]->ts, &now);
+    double last = recent_clients[idx]->last_request_time;
+    double diff = time_now - last;
 
     return diff <= RATE_LIMIT_THRESHOLD;
 }
 
-/*Gets the time difference between two timespecs (assumes theyre not null)*/
-double time_difference(struct timespec *time1, struct timespec *time2) {
-    if(!time1 || !time2) {
-        return 9999999;
-    }
-    //take seconds
-    double seconds1 = time1->tv_sec;
-    double seconds2 = time2->tv_sec;
-
-    //and nanoseconds
-    double nano_seconds_1 = time1->tv_nsec;
-    double nano_seconds_2 = time2->tv_nsec;
-
-    //get difference
-    double sec_difference = seconds1 - seconds2;
-    double nanosec_difference = nano_seconds_1 - nano_seconds_2;
-
-
-    //adjust for carry over 
-    if(nanosec_difference < 0) {
-        sec_difference -= 1;
-        nanosec_difference += 1000000000;
-    }
-
-    //convert nanoseconds to seconds
-    double time_difference = sec_difference + (nanosec_difference / 1000000000.0);
-
-    return fabs(time_difference);
-}
-
-/*grabs the client given the index in the buffer*/
 struct client_info_t* get_recent_client(int index) {
     return recent_clients[index];
 }
