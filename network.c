@@ -38,13 +38,22 @@ void clock_setup(struct profile_context_t* ptContext) {
 
     #else // Linux
         static struct timespec ts;
-        if (clock_getres(CLOCK_MONOTONIC, &ts) != 0) {
-            fprintf(stderr, "clock_getres() failed\n");
-            exit(1);
+        static double dPerFrequency = 0;
+    
+        if (dPerFrequency == 0) { // Ensure it's initialized only once
+            if (clock_getres(CLOCK_MONOTONIC, &ts) != 0) {
+                fprintf(stderr, "clock_getres() failed\n");
+                exit(1);
+            }
+            double total_nsec = (double)ts.tv_nsec + (double)ts.tv_sec * 1e9;
+            if (total_nsec == 0) {
+                fprintf(stderr, "Invalid clock resolution (division by zero)\n");
+                exit(1);
+            }
+            dPerFrequency = 1e9 / total_nsec;
         }
-
-        static double dPerFrequency = 1e9 / ((double)ts.tv_nsec + (double)ts.tv_sec * 1e9);
-        ptContext->pInternal = &dPerFrequency;
+    
+        ptContext->pInternal = &dPerFrequency;s
     #endif
 }
 
