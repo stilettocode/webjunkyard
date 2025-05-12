@@ -53,7 +53,7 @@ void clock_setup(struct profile_context_t* ptContext) {
             dPerFrequency = 1e9 / total_nsec;
         }
     
-        ptContext->pInternal = &dPerFrequency;s
+        ptContext->pInternal = &dPerFrequency;
     #endif
 }
 
