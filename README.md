@@ -224,4 +224,4 @@ The timestamp is a UNIX timestamp, and all data is in big endian. Here are the c
 | 1107           | Brakes      | float: 0 or 1    |
 | 1109           | Throttle    | float: -100, 100 |
 | 1110           | Steering    | float: -1.0, 1.0 |
-| 1105           | Lights      | float:  0 or 1   |
+| 1106           | Lights      | float:  0 or 1   |
