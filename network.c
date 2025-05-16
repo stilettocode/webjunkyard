@@ -12,7 +12,7 @@
 //variables for rate limiting 
 #define RECENT_CLIENT_CAPACITY 100
 #define RATE_LIMIT_THRESHOLD 0.50f
-#define RATE_LIMIT_THRESHOLD_DUST 0.10f //seconds
+#define RATE_LIMIT_THRESHOLD_DUST 0.00f //seconds
 
 struct client_info_t* recent_clients[RECENT_CLIENT_CAPACITY] = {0}; //global circular buffer
 //pointers for buffer
@@ -633,7 +633,7 @@ int rate_limit_required(struct client_info_t* client, int dust_rate){
 
     float rate = (dust_rate == 0) ? RATE_LIMIT_THRESHOLD_DUST : RATE_LIMIT_THRESHOLD; //seconds
 
-    printf("rate limit: %f\n", rate);
+    // printf("rate limit: %f\n", rate);
     double time_now = get_wall_clock(&profile_context);
     int idx = get_client_index(client);
     if (idx == -1) {

@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
             char* dust_ip = "192.168.51.201";
             
       
-            printf("UDP IP: %s\n", get_client_udp_address(client));
+            // printf("UDP IP: %s\n", get_client_udp_address(client));
 
             get_contents(client->udp_request, &time, &command, data);
 
