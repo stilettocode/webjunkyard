@@ -11,7 +11,7 @@
 
 //variables for rate limiting 
 #define RECENT_CLIENT_CAPACITY 100
-#define RATE_LIMIT_THRESHOLD 0.50f
+#define RATE_LIMIT_THRESHOLD 0.00f
 #define RATE_LIMIT_THRESHOLD_DUST 0.00f //seconds
 
 struct client_info_t* recent_clients[RECENT_CLIENT_CAPACITY] = {0}; //global circular buffer
