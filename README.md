@@ -1,0 +1,1 @@
+This is a repository for testing possible web/infrastructure solutions related to the University of Michigan's Collaborative Laboratory for Advancing Work in Space. More specifically, the Lab needs a good backend system for sending data to and from NASA, and you'll see me poking at stuff here.
