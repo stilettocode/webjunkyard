@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 This is a repository for testing possible web/infrastructure solutions related to the University of Michigan's Collaborative Laboratory for Advancing Work in Space. More specifically, the Lab needs a good backend system for sending data to and from NASA, and you'll see me poking at stuff here.
-=======
+
 <h1 align="center">
   :man_astronaut: S.U.I.T.S. Telemetry Stream Server C :woman_astronaut:
 <br>
@@ -228,4 +227,3 @@ The timestamp is a UNIX timestamp, and all data is in big endian. Here are the c
 | 1109           | Throttle    | float: -100, 100 |
 | 1110           | Steering    | float: -1.0, 1.0 |
 | 1106           | Lights      | float:  0 or 1   |
->>>>>>> tss/main
